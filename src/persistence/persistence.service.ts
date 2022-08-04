@@ -1,20 +1,286 @@
-import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
-import { jsonEvent, MetadataType } from '@eventstore/db-client';
+import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
+import { AllStreamResolvedEvent, jsonEvent, MetadataType, StreamSubscription } from '@eventstore/db-client';
+import {
+  Workflow,
+  WorkflowAcceptance,
+  WorkflowInstance,
+  WorkflowInstanceAcceptance,
+  WorkflowInstanceProposal,
+  WorkflowInstanceRejection,
+  WorkflowInstanceStateAdvancement,
+  WorkflowInstanceStateAdvancementAcceptance,
+  WorkflowInstanceStateAdvancementRejection,
+  WorkflowProposal,
+  WorkflowRejection
+} from '../workflow/models';
+import * as eventTypes from './persistence.events';
+
 import { client as eventStore, connect as connectToEventStore } from './eventstoredb';
 import { environment } from '../environment';
+import { randomUUIDv4 } from '../core/utils';
 
 /**
  * Adapter service for third party event sourcing services.
+ *
+ * CAUTION: The persistence service is only consistent for 1 or 2 participants. That is caused by the way acceptance
+ *          and rejection events are handled. In a scenario with more than 2 participants, the status of the workflow
+ *          the workflow instance and the transitions might be off.
  */
 @Injectable()
-export class PersistenceService implements OnModuleInit {
+export class PersistenceService implements OnModuleInit, OnModuleDestroy {
 
   private readonly logger = new Logger(PersistenceService.name);
+  private readonly subscriptions: StreamSubscription[] = [];
+
+  private readonly workflowsProjectionName = 'custom-projections.workflows.' + randomUUIDv4();
+  private readonly workflowsProjection = `
+    fromAll()
+        .when({
+            $init: () => ({ workflows: {} }),
+            "${eventTypes.proposeWorkflow.type}": (s, e) => { s.workflows[e.data.consistencyId] = e.data; }
+            "${eventTypes.receiveWorkflow.type}": (s, e) => { s.workflows[e.data.consistencyId] = e.data; }
+        })
+        .transformBy((state) => state.workflows)
+        .outputState();
+  `;
+
+  private readonly workflowInstancesProjectionName = 'custom-projections.instances.' + randomUUIDv4();
+  private readonly workflowInstancesProjection = `
+    fromAll()
+        .when({
+            $init: () => ({ instances: {} }),
+            "${eventTypes.launchWorkflowInstance.type}": (s, e) => { s.instances[e.data.consistencyId] = e.data; },
+            "${eventTypes.receiveWorkflowInstance.type}": (s, e) => { s.instances[e.data.consistencyId] = e.data; },
+            "${eventTypes.advanceWorkflowInstanceState.type}": (s, e) => { s.instances[e.data.id].currentState = e.data.to; }
+            "${eventTypes.rejectAdvanceWorkflowInstanceState.type}": (s, e) => { s.instances[e.data.id].currentState = e.data.from; }
+        })
+        .transformBy((state) => state.instances)
+        .outputState();
+  `;
 
   /** @inheritDoc */
-  onModuleInit() {
+  async onModuleInit() {
     this.logger.log(`Establishing connection to event store on "${environment.persistenceServiceUrl}"`);
-    connectToEventStore();
+    await connectToEventStore();
+
+    this.logger.log(`Creating event store projections: ${[this.workflowsProjectionName, this.workflowInstancesProjectionName].join(', ')}`);
+    await eventStore.createProjection(this.workflowsProjectionName, this.workflowsProjection);
+    await eventStore.createProjection(this.workflowInstancesProjectionName, this.workflowInstancesProjection);
+  }
+
+  /** @inheritDoc */
+  async onModuleDestroy() {
+    this.logger.log(`Unsubscribing from ${this.subscriptions.length} event streams`);
+    await Promise.all(this.subscriptions.map(async (curr) => await curr.unsubscribe()));
+
+    this.logger.log(`Disable and delete all used projections`);
+    if (await this.existsProjection(this.workflowsProjectionName)) {
+      await eventStore.disableProjection(this.workflowsProjectionName);
+      await eventStore.deleteProjection(this.workflowsProjectionName);
+    }
+    if (await this.existsProjection(this.workflowInstancesProjectionName)) {
+      await eventStore.disableProjection(this.workflowInstancesProjectionName);
+      await eventStore.deleteProjection(this.workflowInstancesProjectionName);
+    }
+  }
+
+  /**
+   * Proposes a new workflow to all participants.
+   * @param proposal
+   */
+  async proposeWorkflow(proposal: Omit<WorkflowProposal, 'consistencyId'>) {
+    const proposedWorkflow: Workflow = {
+      ...proposal,
+      consistencyId: randomUUIDv4()
+    };
+    await this.appendToStream(`workflows.${proposedWorkflow.consistencyId}`, eventTypes.proposeWorkflow(proposedWorkflow));
+    return proposedWorkflow as Workflow;
+  }
+
+  /**
+   * A new workflow proposal has been received.
+   * @param proposal
+   */
+  async receiveWorkflow(proposal: WorkflowProposal) {
+    return await this.appendToStream(`workflows.${proposal.consistencyId}`, eventTypes.receiveWorkflow(proposal));
+  }
+
+  /**
+   * Accepts a proposed workflow from any of the participants.
+   * @param acceptance
+   */
+  async acceptWorkflow(acceptance: WorkflowAcceptance) {
+    return await this.appendToStream(`workflows.${acceptance.id}`, eventTypes.acceptWorkflow(acceptance));
+  }
+
+  /**
+   * Rejects a proposed workflow from any of the participants.
+   * @param rejection
+   */
+  async rejectWorkflow(rejection: WorkflowRejection) {
+    return await this.appendToStream(`workflows.${rejection.id}`, eventTypes.rejectWorkflow(rejection));
+  }
+
+  /**
+   * Launches a new instances of a certain workflow.
+   * @param proposal
+   */
+  async launchWorkflowInstance(proposal: Omit<WorkflowInstanceProposal, 'consistencyId'>) {
+    const proposedWorkflowInstance: WorkflowInstance = {
+      ...proposal,
+      consistencyId: randomUUIDv4()
+    };
+    await this.appendToStream(`instances.${proposedWorkflowInstance.consistencyId}`, eventTypes.launchWorkflowInstance(proposedWorkflowInstance));
+    return proposedWorkflowInstance as WorkflowInstance;
+  }
+
+  /**
+   * A new workflow instance proposal has been received.
+   * @param proposal
+   */
+  async receiveWorkflowInstance(proposal: WorkflowInstanceProposal) {
+    return await this.appendToStream(`instances.${proposal.consistencyId}`, eventTypes.receiveWorkflowInstance(proposal));
+  }
+
+  /**
+   * Accepts a proposed workflow instance from any of the participants.
+   * @param acceptance
+   */
+  async acceptWorkflowInstance(acceptance: WorkflowInstanceAcceptance) {
+    return await this.appendToStream(`instances.${acceptance.id}`, eventTypes.acceptWorkflowInstance(acceptance));
+  }
+
+  /**
+   * Rejects a proposed workflow instance from any of the participants.
+   * @param rejection
+   */
+  async rejectWorkflowInstance(rejection: WorkflowInstanceRejection) {
+    return await this.appendToStream(`instances.${rejection.id}`, eventTypes.rejectWorkflowInstance(rejection));
+  }
+
+  /**
+   * Advances the state of a specific workflow instance.
+   * @param advancement
+   */
+  async advanceWorkflowInstanceState(advancement: WorkflowInstanceStateAdvancement) {
+    await this.appendToStream(`instances.${advancement.id}`, eventTypes.advanceWorkflowInstanceState(advancement));
+  }
+
+  /**
+   * Accepts a state transition for a given workflow instance.
+   * @param acceptance
+   */
+  async acceptAdvanceWorkflowInstance(acceptance: WorkflowInstanceStateAdvancementAcceptance) {
+    return await this.appendToStream(`instances.${acceptance.id}`, eventTypes.acceptAdvanceWorkflowInstanceState(acceptance));
+  }
+
+  /**
+   * Rejects a state transition for a given workflow instance.
+   * @param rejection
+   */
+  async rejectAdvanceWorkflowInstance(rejection: WorkflowInstanceStateAdvancementRejection) {
+    return await this.appendToStream(`instances.${rejection.id}`, eventTypes.rejectAdvanceWorkflowInstanceState(rejection));
+  }
+
+  async getWorkflowStateAt(id: string, at: Date) {
+    let result: Workflow = null;
+    const events = await this.readStream(`workflows.${id}`);
+    try {
+      for await (const { event } of events) {
+        const timestamp = new Date(event.created / 10000);
+        if (timestamp.getTime() > at.getTime()) {
+          break;
+        }
+        const eventType = event?.type;
+        if (eventTypes.proposeWorkflow.sameAs(eventType)) result = event.data as any as Workflow;
+        if (eventTypes.receiveWorkflow.sameAs(eventType)) result = event.data as any as Workflow;
+      }
+    } catch (e) {
+      return null;
+    }
+    return result;
+  }
+
+  async getWorkflowInstanceStateAt(id: string, at: Date) {
+    let result: WorkflowInstance = null;
+    const events = await this.readStream(`instances.${id}`);
+    try {
+      for await (const { event } of events) {
+        const timestamp = new Date(event.created / 10000);
+        if (timestamp.getTime() > at.getTime()) {
+          break;
+        }
+        const eventType = event?.type;
+        if (eventTypes.launchWorkflowInstance.sameAs(eventType)) result = event.data as any as WorkflowInstance;
+        if (eventTypes.receiveWorkflowInstance.sameAs(eventType)) result = event.data as any as WorkflowInstance;
+        else if (eventTypes.advanceWorkflowInstanceState.sameAs(eventType)) result.currentState = (event.data as unknown as WorkflowInstanceStateAdvancement).to;
+        else if (eventTypes.rejectAdvanceWorkflowInstanceState.sameAs(eventType)) result.currentState = (event.data as unknown as WorkflowInstanceStateAdvancement).from;
+      }
+    } catch (e) {
+      return null;
+    }
+    return result;
+  }
+
+  /**
+   * Returns the workflow with the given ID.
+   * @param id Workflow ID.
+   */
+  async getWorkflowById(id: string) {
+    return (await this.getWorkflowsAggregate())[id];
+  }
+
+  /**
+   * Returns the workflow instance with the given ID.
+   * @param id Workflow instance ID.
+   */
+  async getWorkflowInstanceById(id: string) {
+    return (await this.getWorkflowInstancesAggregate())[id];
+  }
+
+  /**
+   * Returns all workflow instances of the given workflow.
+   * @param workflowId Workflow ID.
+   */
+  async getWorkflowInstancesOfWorkflow(workflowId: string) {
+    return Object
+      .entries(await this.getWorkflowInstancesAggregate())
+      .filter(([, instance]) => instance.workflowId === workflowId)
+      .map(([, instance]) => instance);
+  }
+
+  /**
+   * Returns all workflow definitions created.
+   */
+  async getAllWorkflows() {
+    return Object
+      .entries(await this.getWorkflowsAggregate())
+      .map(([, workflow]) => workflow);
+  }
+
+  /**
+   * Returns all workflow instances launched.
+   */
+  async getAllWorkflowInstances() {
+    return Object
+      .entries(await this.getWorkflowInstancesAggregate())
+      .map(([, instance]) => instance);
+  }
+
+  /**
+   * Returns the projected aggregate of all workflows.
+   * @private
+   */
+  private async getWorkflowsAggregate() {
+    return await eventStore.getProjectionResult<Record<string, Workflow>>(this.workflowsProjectionName) ?? {};
+  }
+
+  /**
+   * Returns the projected aggregate of all workflow instances.
+   * @private
+   */
+  private async getWorkflowInstancesAggregate() {
+    return await eventStore.getProjectionResult<Record<string, WorkflowInstance>>(this.workflowInstancesProjectionName) ?? {};
   }
 
   /**
@@ -66,14 +332,6 @@ export class PersistenceService implements OnModuleInit {
     });
   }
 
-  async createProjection(projectionName: string, projection: string) {
-    this.logger.debug(`Create projection "${projectionName}"`);
-    if (await this.existsProjection(projectionName)) {
-      return eventStore.updateProjection(projectionName, projection);
-    }
-    return eventStore.createProjection(projectionName, projection);
-  }
-
   async existsProjection(projectionName: string) {
     const projections = await eventStore.listProjections();
     for await (const projection of projections) {
@@ -84,18 +342,11 @@ export class PersistenceService implements OnModuleInit {
     return false;
   }
 
-  async disableProjection(projectionName: string) {
-    if (!await this.existsProjection(projectionName)) return;
-    return eventStore.disableProjection(projectionName);
-  }
-
-  async deleteProjection(projectionName: string) {
-    if (!await this.existsProjection(projectionName)) return;
-    return eventStore.disableProjection(projectionName);
-  }
-
-  async getProjectionResult<T>(projectionName: string) {
-    this.logger.debug(`Read projection state of "${projectionName}"`);
-    return eventStore.getProjectionResult<T>(projectionName);
+  async subscribeToAll(eventHandler: (resolvedEvent: AllStreamResolvedEvent) => void) {
+    const subscription = eventStore.subscribeToAll({ fromPosition: 'end' });
+    this.subscriptions.push(subscription);
+    for await (const resolvedEvent of subscription) {
+      eventHandler(resolvedEvent);
+    }
   }
 }

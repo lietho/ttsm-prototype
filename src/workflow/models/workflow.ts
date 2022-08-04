@@ -2,8 +2,17 @@ import { MachineConfig } from 'xstate';
 import { WorkflowConfig } from './workflow-config';
 import { ConsistencyEntity } from '../../consistency';
 
-export class Workflow implements ConsistencyEntity {
+/**
+ * The derived status of a workflow.
+ */
+export type WorkflowStatus = 'PENDING' | 'ACCEPTED' | 'REJECTED';
+
+export interface Workflow extends ConsistencyEntity {
   config?: Partial<WorkflowConfig>;
   workflowModel: MachineConfig<any, any, any>;
-  consistencyId: string;
 }
+
+/**
+ * Contains all information that is required for a workflow proposal.
+ */
+export type WorkflowProposal = Omit<Workflow, 'status'>;

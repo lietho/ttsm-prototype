@@ -1,23 +1,7 @@
 import { Body, Controller, Get, Param, Post, Query } from '@nestjs/common';
-import {
-  Workflow,
-  WorkflowDto,
-  WorkflowInstance,
-  WorkflowInstanceConfig,
-  WorkflowInstanceTransitionConfig
-} from './models';
+import { WorkflowDto, WorkflowInstanceConfig, WorkflowInstanceTransitionConfig } from './models';
 import { WorkflowService } from './workflow.service';
-import {
-  ApiConsumes,
-  ApiCreatedResponse,
-  ApiNotFoundResponse,
-  ApiOkResponse,
-  ApiOperation,
-  ApiParam,
-  ApiProduces,
-  ApiQuery,
-  ApiTags
-} from '@nestjs/swagger';
+import { ApiConsumes, ApiCreatedResponse, ApiNotFoundResponse, ApiOkResponse, ApiOperation, ApiParam, ApiProduces, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { renameConsistencyId } from './utils';
 
 @ApiConsumes('application/json')
@@ -34,12 +18,11 @@ export class WorkflowController {
     description: 'Creates a new workflow with a unique ID and its corresponding state chart.'
   })
   @ApiCreatedResponse({
-    description: 'Workflow has been created successfully',
-    type: Workflow
+    description: 'Workflow has been created successfully'
   })
   @ApiTags('Workflows')
   async createWorkflow(@Body() dto: WorkflowDto) {
-    return renameConsistencyId(await this.workflowService.createWorkflow(dto.workflow, dto.config));
+    return renameConsistencyId(await this.workflowService.proposeWorkflow(dto.workflow, dto.config));
   }
 
   @Get()
@@ -48,8 +31,7 @@ export class WorkflowController {
     description: 'Returns a list of all previously created workflows (no matter if still active or not).'
   })
   @ApiOkResponse({
-    description: 'Workflows returned successfully',
-    type: [Workflow]
+    description: 'Workflows returned successfully'
   })
   @ApiTags('Workflows')
   async getAllWorkflows() {
@@ -74,8 +56,7 @@ export class WorkflowController {
     required: false
   })
   @ApiOkResponse({
-    description: 'Workflows returned successfully',
-    type: [Workflow]
+    description: 'Workflows returned successfully'
   })
   @ApiNotFoundResponse({
     description: 'The workflow with the given ID does not exist'
@@ -159,8 +140,7 @@ export class WorkflowController {
     required: false
   })
   @ApiOkResponse({
-    description: 'Workflow instance returned successfully',
-    type: WorkflowInstance
+    description: 'Workflow instance returned successfully'
   })
   @ApiNotFoundResponse({
     description: 'The workflow or the workflow instance with the given ID do not exist'
@@ -187,8 +167,7 @@ export class WorkflowController {
     description: 'The ID of the workflow.'
   })
   @ApiOkResponse({
-    description: 'All workflow instances returned successfully',
-    type: [WorkflowInstance]
+    description: 'All workflow instances returned successfully'
   })
   @ApiNotFoundResponse({
     description: 'The workflow with the given ID do not exist'

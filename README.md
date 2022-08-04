@@ -1,6 +1,6 @@
-## Description
+## Time-travelling State Machine Prototype for verifiable Business Processes
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+A prototypical implementation of a time-travelling state machine for business process and workflow management.
 
 ## Installation
 
@@ -36,15 +36,15 @@ $ npm run test:cov
 
 ## TODOs:
 
- - Add BPMN to State Chart mapper
- - Commitment Reference in Database
- - Additional Payload
- - Endpoints for rule engine
+- Add BPMN to State Chart mapper
+- ✔ Commitment Reference in Database
+- Additional Payload
+- Endpoints for rule engine
 
 ## Questions:
 
- - Accept and reject of workflows, instances and transitions are implicit. Should the user handle this?
+- Accept and reject of workflows, instances and transitions are implicit. Should the user handle this?
 
 ## Nice Stuff:
 
- - Interesting workflows in https://github.com/jan-ladleif/bpm19-blockchain-based-choreographies
+- Interesting workflows in https://github.com/jan-ladleif/bpm19-blockchain-based-choreographies

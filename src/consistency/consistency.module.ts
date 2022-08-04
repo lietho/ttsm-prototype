@@ -2,9 +2,10 @@ import { Module } from '@nestjs/common';
 import { HttpModule } from '@nestjs/axios';
 import { CONSISTENCY_STRATEGY_PROVIDER_TOKEN, ConsistencyService } from './consistency.service';
 import { NoopStrategy } from './strategies';
+import { PersistenceModule } from '../persistence';
 
 @Module({
-  imports: [HttpModule],
+  imports: [HttpModule, PersistenceModule],
   exports: [ConsistencyService],
   providers: [
     ConsistencyService,
