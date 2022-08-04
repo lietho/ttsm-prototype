@@ -21,10 +21,6 @@ import { randomUUIDv4 } from '../core/utils';
 
 /**
  * Adapter service for third party event sourcing services.
- *
- * CAUTION: The persistence service is only consistent for 1 or 2 participants. That is caused by the way acceptance
- *          and rejection events are handled. In a scenario with more than 2 participants, the status of the workflow
- *          the workflow instance and the transitions might be off.
  */
 @Injectable()
 export class PersistenceService implements OnModuleInit, OnModuleDestroy {
