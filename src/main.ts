@@ -11,13 +11,12 @@ async function bootstrap() {
   app.useGlobalInterceptors(new LoggingInterceptor());
 
   const options = new DocumentBuilder()
-    .setTitle('Look, i have a title')
-    .setDescription('A very nice description')
+    .setTitle('TTSM Prototype')
+    .setDescription('A prototypical implementation of a time-travelling state machine for business process and workflow management')
     .build();
   const document = SwaggerModule.createDocument(app, options);
 
   const redocOptions: RedocOptions = {
-    title: 'Hello Nest',
     logo: {
       url: 'https://redocly.github.io/redoc/petstore-logo.png',
       backgroundColor: '#F0F0F0',

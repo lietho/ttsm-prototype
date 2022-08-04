@@ -79,3 +79,7 @@ Nest is [MIT licensed](LICENSE).
 ## Questions:
 
  - Accept and reject of workflows, instances and transitions are implicit. Should the user handle this?
+
+## Nice Stuff:
+
+ - Interesting workflows in https://github.com/jan-ladleif/bpm19-blockchain-based-choreographies

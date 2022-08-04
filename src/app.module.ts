@@ -3,10 +3,10 @@ import { CoreModule } from './core';
 import { AppController } from './app.controller';
 import { WorkflowModule } from './workflow/workflow.module';
 import { ConsistencyModule } from './consistency';
-import { PersistencyModule } from './persistency/persistency.module';
+import { PersistenceModule } from './persistence';
 
 @Module({
-  imports: [CoreModule, WorkflowModule, ConsistencyModule, PersistencyModule],
+  imports: [CoreModule, WorkflowModule, ConsistencyModule, PersistenceModule],
   controllers: [AppController]
 })
 export class AppModule {

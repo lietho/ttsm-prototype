@@ -1,9 +1,16 @@
 import { Body, Controller, Get, Param, Post } from '@nestjs/common';
-import { Workflow, WorkflowDto, WorkflowInstanceConfig, WorkflowInstanceTransitionConfig } from './models';
+import {
+  Workflow,
+  WorkflowDto,
+  WorkflowInstance,
+  WorkflowInstanceConfig,
+  WorkflowInstanceTransitionConfig
+} from './models';
 import { WorkflowService } from './workflow.service';
 import {
   ApiConsumes,
   ApiCreatedResponse,
+  ApiNotFoundResponse,
   ApiOkResponse,
   ApiOperation,
   ApiParam,
@@ -49,6 +56,28 @@ export class WorkflowController {
     return workflows.map((entity) => renameConsistencyId(entity));
   }
 
+  @Get(':workflowId')
+  @ApiOperation({
+    summary: 'Get workflow',
+    description: 'Returns the workflow with the given ID.'
+  })
+  @ApiParam({
+    name: 'workflowId',
+    example: '44aece41-d6cb-466b-95e4-2d59cf5b2f01',
+    description: 'The ID of the workflow.'
+  })
+  @ApiOkResponse({
+    description: 'Workflows returned successfully',
+    type: [Workflow]
+  })
+  @ApiNotFoundResponse({
+    description: 'The workflow with the given ID does not exist'
+  })
+  @ApiTags('Workflows')
+  async getWorkflow(@Param('workflowId') workflowId: string) {
+    return renameConsistencyId(await this.workflowService.getWorkflow(workflowId));
+  }
+
   @Post(':id/launch')
   @ApiOperation({
     summary: 'Launch workflow instance',
@@ -61,6 +90,9 @@ export class WorkflowController {
   })
   @ApiOkResponse({
     description: 'Workflow instance has been launched successfully'
+  })
+  @ApiNotFoundResponse({
+    description: 'The workflow with the given ID does not exist'
   })
   @ApiTags('Workflow Instances')
   async launchWorkflowInstance(@Param('id') workflowId: string,
@@ -83,10 +115,41 @@ export class WorkflowController {
     example: 'eee0dc00-486e-48c7-9d40-3df957a28ac2',
     description: 'The ID of the instance of a given workflow that should be advanced.'
   })
+  @ApiNotFoundResponse({
+    description: 'The workflow or the workflow instance with the given ID do not exist'
+  })
   @ApiTags('Workflow Instances')
   async advanceWorkflowInstance(@Param('workflowId') workflowId: string,
                                 @Param('instanceId') instanceId: string,
                                 @Body() transitionConfig: WorkflowInstanceTransitionConfig) {
     return renameConsistencyId(await this.workflowService.advanceWorkflowInstance(workflowId, instanceId, transitionConfig));
+  }
+
+  @Get(':workflowId/instances/:instanceId')
+  @ApiOperation({
+    summary: 'Get workflow instance',
+    description: 'Returns the workflow instance with the given ID.'
+  })
+  @ApiParam({
+    name: 'workflowId',
+    example: '44aece41-d6cb-466b-95e4-2d59cf5b2f01',
+    description: 'The ID of the workflow.'
+  })
+  @ApiParam({
+    name: 'instanceId',
+    example: 'eee0dc00-486e-48c7-9d40-3df957a28ac2',
+    description: 'The ID of the instance of a given workflow that should be returned.'
+  })
+  @ApiOkResponse({
+    description: 'Workflow instance returned successfully',
+    type: [WorkflowInstance]
+  })
+  @ApiNotFoundResponse({
+    description: 'The workflow or the workflow instance with the given ID do not exist'
+  })
+  @ApiTags('Workflow Instances')
+  async getWorkflowInstance(@Param('workflowId') workflowId: string,
+                            @Param('instanceId') instanceId: string) {
+    return renameConsistencyId(await this.workflowService.getWorkflowInstance(workflowId, instanceId));
   }
 }
