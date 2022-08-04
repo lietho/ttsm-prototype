@@ -13,7 +13,7 @@ export interface ConsistencyStrategy {
    * is required.
    * @see ofActionType
    */
-  readonly actions$: Subject<ConsistencyMessage>;
+  readonly actions$: Subject<ConsistencyMessage<unknown>>;
 
   /**
    * Returns the current status of the service stack that is required to run this strategy or throws an
@@ -27,5 +27,5 @@ export interface ConsistencyStrategy {
    * @param msg Action with any type of JSON structure as payload.
    * @throws GatewayTimeoutException When the required backend services are not reachable.
    */
-  dispatch(msg: ConsistencyMessage);
+  dispatch<T>(msg: ConsistencyMessage<T>);
 }

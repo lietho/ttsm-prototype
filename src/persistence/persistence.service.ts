@@ -66,4 +66,36 @@ export class PersistenceService implements OnModuleInit {
     });
   }
 
+  async createProjection(projectionName: string, projection: string) {
+    this.logger.debug(`Create projection "${projectionName}"`);
+    if (await this.existsProjection(projectionName)) {
+      return eventStore.updateProjection(projectionName, projection);
+    }
+    return eventStore.createProjection(projectionName, projection);
+  }
+
+  async existsProjection(projectionName: string) {
+    const projections = await eventStore.listProjections();
+    for await (const projection of projections) {
+      if (projection.name === projectionName) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  async disableProjection(projectionName: string) {
+    if (!await this.existsProjection(projectionName)) return;
+    return eventStore.disableProjection(projectionName);
+  }
+
+  async deleteProjection(projectionName: string) {
+    if (!await this.existsProjection(projectionName)) return;
+    return eventStore.disableProjection(projectionName);
+  }
+
+  async getProjectionResult<T>(projectionName: string) {
+    this.logger.debug(`Read projection state of "${projectionName}"`);
+    return eventStore.getProjectionResult<T>(projectionName);
+  }
 }

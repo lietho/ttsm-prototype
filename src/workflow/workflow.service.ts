@@ -40,30 +40,54 @@ export class WorkflowService implements OnModuleInit {
   onModuleInit() {
     this.consistency.actions$
       .pipe(ofConsistencyMessage(createWorkflow))
-      .subscribe((msg) => this.onCreateExternalWorkflow(msg.consistencyId, msg.workflow, msg.config));
+      .subscribe(({ commitmentReference, payload }) => this.onCreateExternalWorkflow(
+        payload.consistencyId,
+        payload.workflow,
+        payload.config,
+        commitmentReference
+      ));
 
     // If ANYONE sends a reject for this workflow, I want to remove it entirely
     this.consistency.actions$
       .pipe(ofConsistencyMessage(rejectWorkflow))
-      .subscribe((msg) => this.onRejectExternalWorkflow(msg.consistencyId));
+      .subscribe(({ commitmentReference, payload }) => this.onRejectExternalWorkflow(
+        payload.consistencyId,
+        commitmentReference
+      ));
 
     this.consistency.actions$
       .pipe(ofConsistencyMessage(launchWorkflowInstance))
-      .subscribe((msg) => this.onLaunchExternalWorkflowInstance(msg.workflowConsistencyId, msg.workflowInstanceConsistencyId));
+      .subscribe(({ commitmentReference, payload }) => this.onLaunchExternalWorkflowInstance(
+        payload.workflowConsistencyId,
+        payload.workflowInstanceConsistencyId,
+        commitmentReference
+      ));
 
     // If ANYONE sends a reject for this workflow instance, I want to remove it entirely
     this.consistency.actions$
       .pipe(ofConsistencyMessage(rejectWorkflowInstance))
-      .subscribe((msg) => this.onRejectLaunchExternalWorkflow(msg.consistencyId));
+      .subscribe(({ commitmentReference, payload }) => this.onRejectLaunchExternalWorkflow(
+        payload.consistencyId,
+        commitmentReference
+      ));
 
     this.consistency.actions$
       .pipe(ofConsistencyMessage(advanceWorkflowInstance))
-      .subscribe((msg) => this.onAdvanceExternalWorkflowInstance(msg.workflowInstanceConsistencyId, msg.fromState, msg.transitionEvent));
+      .subscribe(({ commitmentReference, payload }) => this.onAdvanceExternalWorkflowInstance(
+        payload.workflowInstanceConsistencyId,
+        payload.fromState,
+        payload.transitionEvent,
+        commitmentReference
+      ));
 
     // Rollback the state transition if ANYONE rejects it
     this.consistency.actions$
       .pipe(ofConsistencyMessage(rejectAdvanceWorkflowInstance))
-      .subscribe((msg) => this.onRejectAdvanceExternalWorkflowInstance(msg.workflowInstanceConsistencyId, msg.fromState));
+      .subscribe(({ commitmentReference, payload }) => this.onRejectAdvanceExternalWorkflowInstance(
+        payload.workflowInstanceConsistencyId,
+        payload.fromState,
+        commitmentReference
+      ));
   }
 
   /**
@@ -71,40 +95,44 @@ export class WorkflowService implements OnModuleInit {
    * @param consistencyId
    * @param workflowModel
    * @param config
+   * @param commitmentReference
    * @private
    */
-  private async onCreateExternalWorkflow(consistencyId: string, workflowModel: SupportedWorkflowModels, config?: SupportedWorkflowConfig) {
-    await this.workflowRepo.insertWorkflow({ consistencyId, workflowModel, config });
+  private async onCreateExternalWorkflow(consistencyId: string, workflowModel: SupportedWorkflowModels, config: SupportedWorkflowConfig, commitmentReference: string) {
+    await this.workflowRepo.insertWorkflow({ consistencyId, workflowModel, config, commitmentReference });
     return this.consistency.dispatch(acceptWorkflow({ consistencyId }));
   }
 
   /**
    * Some counterparty rejected the proposed workflow definition.
    * @param consistencyId
+   * @param commitmentReference
    * @private
    */
-  private async onRejectExternalWorkflow(consistencyId: string) {
-    return this.workflowRepo.deleteWorkflowById(consistencyId);
+  private async onRejectExternalWorkflow(consistencyId: string, commitmentReference: string) {
+    return this.workflowRepo.deleteWorkflowById(consistencyId, commitmentReference);
   }
 
   /**
    * Some counterparty wants to launch a new workflow instance.
    * @param workflowId
    * @param consistencyId
+   * @param commitmentReference
    * @private
    */
-  private async onLaunchExternalWorkflowInstance(workflowId: string, consistencyId: string) {
-    await this.workflowRepo.insertWorkflowInstance({ workflowId, consistencyId });
+  private async onLaunchExternalWorkflowInstance(workflowId: string, consistencyId: string, commitmentReference: string) {
+    await this.workflowRepo.insertWorkflowInstance({ workflowId, consistencyId, commitmentReference });
     return this.consistency.dispatch(acceptWorkflowInstance({ consistencyId }));
   }
 
   /**
    * Some counterparty rejected the proposed workflow instance.
    * @param consistencyId
+   * @param commitmentReference
    * @private
    */
-  private async onRejectLaunchExternalWorkflow(consistencyId: string) {
-    return this.workflowRepo.deleteWorkflowInstanceById(consistencyId);
+  private async onRejectLaunchExternalWorkflow(consistencyId: string, commitmentReference: string) {
+    return this.workflowRepo.deleteWorkflowInstanceById(consistencyId, commitmentReference);
   }
 
   /**
@@ -112,9 +140,10 @@ export class WorkflowService implements OnModuleInit {
    * @param instanceId
    * @param fromState
    * @param transitionEvent
+   * @param commitmentReference
    * @private
    */
-  private async onAdvanceExternalWorkflowInstance(instanceId: string, fromState: StateValue, transitionEvent: string) {
+  private async onAdvanceExternalWorkflowInstance(instanceId: string, fromState: StateValue, transitionEvent: string, commitmentReference: string) {
     const workflowInstance = await this.workflowRepo.getWorkflowInstanceById(instanceId);
     if (workflowInstance == null) {
       return this.consistency.dispatch(rejectAdvanceWorkflowInstance({
@@ -142,7 +171,7 @@ export class WorkflowService implements OnModuleInit {
     }));
   }
 
-  private async onRejectAdvanceExternalWorkflowInstance(instanceId: string, fromState: StateValue) {
+  private async onRejectAdvanceExternalWorkflowInstance(instanceId: string, fromState: StateValue, commitmentReference: string) {
     const workflowInstance = await this.workflowRepo.getWorkflowInstanceById(instanceId);
     if (workflowInstance == null) {
       return;
@@ -207,28 +236,40 @@ export class WorkflowService implements OnModuleInit {
     return workflowInstance;
   }
 
+  async getWorkflowStateAt(id: string, at: Date) {
+    const state = await this.workflowRepo.getWorkflowStateAt(id, at);
+    if (state == null) throw new NotFoundException(`Workflow "${id}" did not exist at ${at.toISOString()}`);
+    return state;
+  }
+
+  async getWorkflowInstanceStateAt(id: string, at: Date) {
+    const state = await this.workflowRepo.getWorkflowInstanceStateAt(id, at);
+    if (state == null) throw new NotFoundException(`Workflow instance "${id}" did not exist at ${at.toISOString()}`);
+    return state;
+  }
+
   /**
    * Returns all currently available workflows.
    */
-  getWorkflows() {
-    return this.workflowRepo.getAllWorkflows();
+  async getWorkflows() {
+    return await this.workflowRepo.getAllWorkflows();
   }
 
   /**
    * Returns the state of all currently active workflow instances.
    */
-  getWorkflowInstances() {
-    return this.workflowRepo.getAllWorkflowInstances();
+  async getWorkflowInstances() {
+    return await this.workflowRepo.getAllWorkflowInstances();
   }
 
   /**
    * Returns the workflow with the given ID.
    * @param id Workflow ID.
    */
-  getWorkflow(id: string) {
-    const workflow = this.workflowRepo.getWorkflowById(id);
+  async getWorkflow(id: string) {
+    const workflow = await this.workflowRepo.getWorkflowById(id);
     if (workflow == null) throw new NotFoundException(`Workflow with ID "${id}" does not exist`);
-    return Promise.resolve(workflow);
+    return workflow;
   }
 
   /**
@@ -236,11 +277,19 @@ export class WorkflowService implements OnModuleInit {
    * @param workflowId Workflow ID.
    * @param instanceId Workflow instance ID.
    */
-  getWorkflowInstance(workflowId: string, instanceId: string) {
-    const workflow = this.workflowRepo.getWorkflowById(workflowId);
+  async getWorkflowInstance(workflowId: string, instanceId: string) {
+    const workflow = await this.workflowRepo.getWorkflowById(workflowId);
     if (workflow == null) throw new NotFoundException(`Workflow with ID "${workflowId}" does not exist`);
-    const instance = this.workflowRepo.getWorkflowInstanceById(instanceId);
+    const instance = await this.workflowRepo.getWorkflowInstanceById(instanceId);
     if (instance == null) throw new NotFoundException(`Workflow instance with ID "${instanceId}" does not exist on workflow "${workflowId}"`);
-    return Promise.resolve(instance);
+    return instance;
+  }
+
+  /**
+   * Returns all workflow instances of the workflow with the given ID.
+   * @param workflowId Workflow ID.
+   */
+  async getWorkflowInstancesOfWorkflow(workflowId: string) {
+    return await this.workflowRepo.getWorkflowInstancesOfWorkflow(workflowId);
   }
 }

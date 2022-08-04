@@ -10,20 +10,20 @@ import { randomEthereumAddress } from '../../core/utils';
 export class Point2PointStrategy implements ConsistencyStrategy {
 
   private readonly logger = new Logger(Point2PointStrategy.name);
-  readonly actions$ = new Subject<ConsistencyMessage>();
+  readonly actions$ = new Subject<ConsistencyMessage<unknown>>();
 
   constructor(private http: HttpService) {
   }
 
   @Post()
-  receiveConsistencyMessage(@Body() msg: ConsistencyMessage) {
+  receiveConsistencyMessage(@Body() msg: ConsistencyMessage<any>) {
     this.logger.debug(`Consistency message received: ${JSON.stringify(msg)}`);
     this.actions$.next(msg);
     return 'OK';
   }
 
   /** @inheritDoc */
-  dispatch(msg: ConsistencyMessage) {
+  dispatch<T>(msg: ConsistencyMessage<T>) {
     msg = { ...msg, commitmentReference: randomEthereumAddress() };
     this.logger.debug(`Dispatching new message: ${JSON.stringify(msg)}`);
     const result = firstValueFrom(this.http.post(environment.consistencyServiceUrl + '/_internal/consistency/p2p', msg));

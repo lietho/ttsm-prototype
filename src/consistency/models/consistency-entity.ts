@@ -7,4 +7,9 @@ export interface ConsistencyEntity {
    * This is the only ID that MUST be the same on every participants side.
    */
   consistencyId: string;
+
+  /**
+   * A reference on an immutable data storage that shows that this entity was exchanged.
+   */
+  commitmentReference?: string;
 }

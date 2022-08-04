@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Post } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Query } from '@nestjs/common';
 import {
   Workflow,
   WorkflowDto,
@@ -15,6 +15,7 @@ import {
   ApiOperation,
   ApiParam,
   ApiProduces,
+  ApiQuery,
   ApiTags
 } from '@nestjs/swagger';
 import { renameConsistencyId } from './utils';
@@ -66,6 +67,12 @@ export class WorkflowController {
     example: '44aece41-d6cb-466b-95e4-2d59cf5b2f01',
     description: 'The ID of the workflow.'
   })
+  @ApiQuery({
+    name: 'until',
+    example: '2022-08-04T12:37:54.097Z',
+    description: 'Enables time-travel by specifying the point in time to which the system should query back and return the workflow definition.',
+    required: false
+  })
   @ApiOkResponse({
     description: 'Workflows returned successfully',
     type: [Workflow]
@@ -73,8 +80,13 @@ export class WorkflowController {
   @ApiNotFoundResponse({
     description: 'The workflow with the given ID does not exist'
   })
-  @ApiTags('Workflows')
-  async getWorkflow(@Param('workflowId') workflowId: string) {
+  @ApiTags('Workflows', 'Time Travel')
+  async getWorkflow(@Param('workflowId') workflowId: string,
+                    @Query('until') timestamp: string) {
+    const until = new Date(timestamp);
+    if (!isNaN(until.getTime())) {
+      return renameConsistencyId(await this.workflowService.getWorkflowStateAt(workflowId, until));
+    }
     return renameConsistencyId(await this.workflowService.getWorkflow(workflowId));
   }
 
@@ -140,16 +152,50 @@ export class WorkflowController {
     example: 'eee0dc00-486e-48c7-9d40-3df957a28ac2',
     description: 'The ID of the instance of a given workflow that should be returned.'
   })
+  @ApiQuery({
+    name: 'until',
+    example: '2022-08-04T12:37:54.097Z',
+    description: 'Enables time-travel by specifying the point in time to which the system should query back and return the workflow instance.',
+    required: false
+  })
   @ApiOkResponse({
     description: 'Workflow instance returned successfully',
-    type: [WorkflowInstance]
+    type: WorkflowInstance
   })
   @ApiNotFoundResponse({
     description: 'The workflow or the workflow instance with the given ID do not exist'
   })
-  @ApiTags('Workflow Instances')
+  @ApiTags('Workflow Instances', 'Time Travel')
   async getWorkflowInstance(@Param('workflowId') workflowId: string,
-                            @Param('instanceId') instanceId: string) {
+                            @Param('instanceId') instanceId: string,
+                            @Query('until') timestamp: string) {
+    const until = new Date(timestamp);
+    if (!isNaN(until.getTime())) {
+      return renameConsistencyId(await this.workflowService.getWorkflowInstanceStateAt(instanceId, until));
+    }
     return renameConsistencyId(await this.workflowService.getWorkflowInstance(workflowId, instanceId));
+  }
+
+  @Get(':workflowId/instances')
+  @ApiOperation({
+    summary: 'Get workflow instances',
+    description: 'Returns all workflow instances of the workflow with the given ID.'
+  })
+  @ApiParam({
+    name: 'workflowId',
+    example: '44aece41-d6cb-466b-95e4-2d59cf5b2f01',
+    description: 'The ID of the workflow.'
+  })
+  @ApiOkResponse({
+    description: 'All workflow instances returned successfully',
+    type: [WorkflowInstance]
+  })
+  @ApiNotFoundResponse({
+    description: 'The workflow with the given ID do not exist'
+  })
+  @ApiTags('Workflow Instances')
+  async getWorkflowInstancesOfWorkflow(@Param('workflowId') workflowId: string) {
+    const result = await this.workflowService.getWorkflowInstancesOfWorkflow(workflowId);
+    return result.map((curr) => renameConsistencyId(curr));
   }
 }

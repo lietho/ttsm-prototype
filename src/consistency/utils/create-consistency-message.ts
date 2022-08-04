@@ -9,7 +9,7 @@ export interface ConsistencyMessageFactory<T> {
    * Creates the message with the given payload.
    * @param payload Payload.
    */
-  (payload: T): ConsistencyMessage;
+  (payload: T): ConsistencyMessage<T>;
 
   /**
    * Message type.
@@ -22,5 +22,5 @@ export interface ConsistencyMessageFactory<T> {
  * @param type Action type.
  */
 export function createConsistencyMessage<T>(type: string): ConsistencyMessageFactory<T> {
-  return Object.assign((payload: T): ConsistencyMessage => ({ type, payload }), { type });
+  return Object.assign((payload: T): ConsistencyMessage<T> => ({ type, payload }), { type });
 }

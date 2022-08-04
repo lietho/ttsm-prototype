@@ -1,12 +1,12 @@
 /**
  * A single message used by the consistency layer.
  */
-export interface ConsistencyMessage {
+export interface ConsistencyMessage<T> {
 
   /**
    * Payload (any kind of data).
    */
-  payload: any;
+  payload: T;
 
   /**
    * Indicates what kind of message this is (might also hold information about the payload!).

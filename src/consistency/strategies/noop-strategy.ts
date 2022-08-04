@@ -13,7 +13,7 @@ import { randomEthereumAddress } from '../../core/utils';
 export class NoopStrategy implements ConsistencyStrategy {
 
   private readonly logger = new Logger(NoopStrategy.name);
-  readonly actions$ = new Subject<ConsistencyMessage>();
+  readonly actions$ = new Subject<ConsistencyMessage<unknown>>();
 
   /**
    * The simulated delay in milliseconds between dispatching a message and receiving it in the
@@ -22,7 +22,7 @@ export class NoopStrategy implements ConsistencyStrategy {
   delay = 500;
 
   /** @inheritDoc */
-  async dispatch(msg: ConsistencyMessage) {
+  async dispatch<T>(msg: ConsistencyMessage<T>) {
     this.logger.log(`Dispatching new message: ${JSON.stringify(msg)}`);
     setTimeout(() => {
       msg = { ...msg, commitmentReference: randomEthereumAddress() };

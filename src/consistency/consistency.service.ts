@@ -18,7 +18,7 @@ export const CONSISTENCY_STRATEGY_PROVIDER_TOKEN = 'CONSISTENCY_STRATEGY';
 export class ConsistencyService implements ConsistencyStrategy {
 
   private readonly log = new Logger(ConsistencyService.name);
-  readonly actions$: Subject<ConsistencyMessage>;
+  readonly actions$: Subject<ConsistencyMessage<unknown>>;
 
   constructor(@Inject(CONSISTENCY_STRATEGY_PROVIDER_TOKEN) private readonly consistencyStrategy: ConsistencyStrategy) {
     this.actions$ = this.consistencyStrategy.actions$;
@@ -38,7 +38,7 @@ export class ConsistencyService implements ConsistencyStrategy {
   }
 
   /** @inheritDoc */
-  async dispatch(msg: ConsistencyMessage) {
+  async dispatch<T>(msg: ConsistencyMessage<T>) {
     if (this.consistencyStrategy == null) {
       this.log.error(`No consistency strategy attached, use the provider token "${CONSISTENCY_STRATEGY_PROVIDER_TOKEN}" to inject a strategy`);
       return null;

@@ -75,6 +75,8 @@ Nest is [MIT licensed](LICENSE).
 ## TODOs:
 
  - Add BPMN to State Chart mapper
+ - Commitment Reference in Database
+ - Additional Payload
 
 ## Questions:
 
