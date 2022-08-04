@@ -33,8 +33,9 @@ export class PersistenceService implements OnModuleInit, OnModuleDestroy {
     fromAll()
         .when({
             $init: () => ({ workflows: {} }),
-            "${eventTypes.proposeWorkflow.type}": (s, e) => { s.workflows[e.data.consistencyId] = e.data; }
-            "${eventTypes.receiveWorkflow.type}": (s, e) => { s.workflows[e.data.consistencyId] = e.data; }
+            "${eventTypes.proposeWorkflow.type}": (s, e) => { s.workflows[e.data.consistencyId] = e.data; },
+            "${eventTypes.receiveWorkflow.type}": (s, e) => { s.workflows[e.data.consistencyId] = e.data; },
+            "${eventTypes.rejectWorkflow.type}": (s, e) => { delete s.workflows[e.data.consistencyId]; },
         })
         .transformBy((state) => state.workflows)
         .outputState();
@@ -47,6 +48,7 @@ export class PersistenceService implements OnModuleInit, OnModuleDestroy {
             $init: () => ({ instances: {} }),
             "${eventTypes.launchWorkflowInstance.type}": (s, e) => { s.instances[e.data.consistencyId] = e.data; },
             "${eventTypes.receiveWorkflowInstance.type}": (s, e) => { s.instances[e.data.consistencyId] = e.data; },
+            "${eventTypes.rejectWorkflowInstance.type}": (s, e) => { delete s.instances[e.data.consistencyId]; },
             "${eventTypes.advanceWorkflowInstanceState.type}": (s, e) => { s.instances[e.data.id].currentState = e.data.to; }
             "${eventTypes.rejectAdvanceWorkflowInstanceState.type}": (s, e) => { s.instances[e.data.id].currentState = e.data.from; }
         })
@@ -190,6 +192,7 @@ export class PersistenceService implements OnModuleInit, OnModuleDestroy {
         const eventType = event?.type;
         if (eventTypes.proposeWorkflow.sameAs(eventType)) result = event.data as any as Workflow;
         if (eventTypes.receiveWorkflow.sameAs(eventType)) result = event.data as any as Workflow;
+        if (eventTypes.rejectWorkflow.sameAs(eventType)) result = null;
       }
     } catch (e) {
       return null;
@@ -209,8 +212,9 @@ export class PersistenceService implements OnModuleInit, OnModuleDestroy {
         const eventType = event?.type;
         if (eventTypes.launchWorkflowInstance.sameAs(eventType)) result = event.data as any as WorkflowInstance;
         if (eventTypes.receiveWorkflowInstance.sameAs(eventType)) result = event.data as any as WorkflowInstance;
-        else if (eventTypes.advanceWorkflowInstanceState.sameAs(eventType)) result.currentState = (event.data as unknown as WorkflowInstanceStateAdvancement).to;
-        else if (eventTypes.rejectAdvanceWorkflowInstanceState.sameAs(eventType)) result.currentState = (event.data as unknown as WorkflowInstanceStateAdvancement).from;
+        if (eventTypes.rejectWorkflowInstance.sameAs(eventType)) result = null;
+        if (eventTypes.advanceWorkflowInstanceState.sameAs(eventType) && result != null) result.currentState = (event.data as unknown as WorkflowInstanceStateAdvancement).to;
+        if (eventTypes.rejectAdvanceWorkflowInstanceState.sameAs(eventType) && result != null) result.currentState = (event.data as unknown as WorkflowInstanceStateAdvancement).from;
       }
     } catch (e) {
       return null;
