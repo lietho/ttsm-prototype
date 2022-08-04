@@ -18,10 +18,11 @@ async function bootstrap() {
 
   const redocOptions: RedocOptions = {
     logo: {
-      url: 'https://redocly.github.io/redoc/petstore-logo.png',
-      backgroundColor: '#F0F0F0',
-      altText: 'PetStore logo'
-    }
+      url: 'https://www.know-center.tugraz.at/wp-content/uploads/2019/07/Logo-TUWien_G.png',
+      href: 'https://tuwien.ac.at/',
+      altText: 'Technische Universität Wien'
+    },
+    favicon: 'https://upload.wikimedia.org/wikipedia/commons/a/ab/Swagger-logo.png'
   };
   await RedocModule.setup('/docs', app, document, redocOptions);
 

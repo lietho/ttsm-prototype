@@ -1,8 +1,8 @@
 {
   "name": "ttsm-prototype",
-  "version": "0.0.1",
+  "version": "1.0.0",
   "description": "",
-  "author": "",
+  "author": "Daniel Kleebinder",
   "private": true,
   "license": "UNLICENSED",
   "scripts": {
