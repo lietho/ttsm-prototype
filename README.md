@@ -1,45 +1,16 @@
 ## Time-travelling State Machine Prototype for verifiable Business Processes
 
-A prototypical implementation of a time-travelling state machine for business process and workflow management.
-
-## Installation
-
-```bash
-$ npm install
-```
+A prototypical implementation of a time-travelling state machine for business process and workflow management. This prototype shows the viability of time-travel verification of business process and
+workflow activities that are backed by the immutability and traceability of a blockchain.
 
 ## Running the app
 
-```bash
-# development
-$ npm run start
-
-# watch mode
-$ npm run start:dev
-
-# production mode
-$ npm run start:prod
-```
-
-## Test
+To run the app, [docker compose](https://www.docker.com/products/docker-desktop/) has to be installed locally. Afterwards, run the following command to launch all services required. The start-up
+process may take a couple of minutes if dependencies must be downloaded
 
 ```bash
-# unit tests
-$ npm run test
-
-# e2e tests
-$ npm run test:e2e
-
-# test coverage
-$ npm run test:cov
+docker-compose up
 ```
-
-## TODOs:
-
-- Add BPMN to State Chart mapper
-- ✔ Commitment Reference in Database
-- Additional Payload
-- Endpoints for rule engine
 
 ## Questions:
 

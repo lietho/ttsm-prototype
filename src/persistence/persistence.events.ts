@@ -22,5 +22,6 @@ export const acceptWorkflowInstance = createPersistenceEvent<WorkflowInstanceAcc
 export const rejectWorkflowInstance = createPersistenceEvent<WorkflowInstanceRejection>('RejectWorkflowInstance');
 
 export const advanceWorkflowInstanceState = createPersistenceEvent<WorkflowInstanceStateTransition>('AdvanceWorkflowInstanceState');
+export const receiveAdvanceWorkflowInstanceState = createPersistenceEvent<WorkflowInstanceStateTransition>('ReceiveAdvanceWorkflowInstanceState');
 export const acceptAdvanceWorkflowInstanceState = createPersistenceEvent<WorkflowInstanceStateTransitionAcceptance>('AcceptAdvanceWorkflowInstanceState');
 export const rejectAdvanceWorkflowInstanceState = createPersistenceEvent<WorkflowInstanceStateTransitionRejection>('RejectAdvanceWorkflowInstanceState');

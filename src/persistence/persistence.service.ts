@@ -50,8 +50,15 @@ export class PersistenceService implements OnModuleInit, OnModuleDestroy {
             "${eventTypes.launchWorkflowInstance.type}": (s, e) => { s.instances[e.data.consistencyId] = e.data; },
             "${eventTypes.receiveWorkflowInstance.type}": (s, e) => { s.instances[e.data.consistencyId] = e.data; },
             "${eventTypes.rejectWorkflowInstance.type}": (s, e) => { delete s.instances[e.data.consistencyId]; },
-            "${eventTypes.advanceWorkflowInstanceState.type}": (s, e) => { s.instances[e.data.id].currentState = e.data.to; }
-            "${eventTypes.rejectAdvanceWorkflowInstanceState.type}": (s, e) => { s.instances[e.data.id].currentState = e.data.from; }
+            "${eventTypes.advanceWorkflowInstanceState.type}": (s, e) => { s.instances[e.data.id].currentState = e.data.to; },
+            "${eventTypes.receiveAdvanceWorkflowInstanceState.type}": (s, e) => {
+                s.instances[e.data.id].currentState = e.data.to;
+                s.instances[e.data.id].commitmentReference = e.data.commitmentReference;
+            },
+            "${eventTypes.rejectAdvanceWorkflowInstanceState.type}": (s, e) => {
+                s.instances[e.data.id].currentState = e.data.from;
+                s.instances[e.data.id].commitmentReference = e.data.commitmentReference;
+            }
         })
         .transformBy((state) => state.instances)
         .outputState();
@@ -166,6 +173,14 @@ export class PersistenceService implements OnModuleInit, OnModuleDestroy {
   }
 
   /**
+   * A new request to advance the workflow instance state has been received.
+   * @param transition
+   */
+  async receiveAdvanceWorkflowInstanceState(transition: WorkflowInstanceStateTransition) {
+    await this.appendToStream(`instances.${transition.id}`, eventTypes.receiveAdvanceWorkflowInstanceState(transition));
+  }
+
+  /**
    * Accepts a state transition for a given workflow instance.
    * @param acceptance
    */
@@ -215,7 +230,16 @@ export class PersistenceService implements OnModuleInit, OnModuleDestroy {
         if (eventTypes.receiveWorkflowInstance.sameAs(eventType)) result = event.data as any as WorkflowInstance;
         if (eventTypes.rejectWorkflowInstance.sameAs(eventType)) result = null;
         if (eventTypes.advanceWorkflowInstanceState.sameAs(eventType) && result != null) result.currentState = (event.data as unknown as WorkflowInstanceStateTransition).to;
-        if (eventTypes.rejectAdvanceWorkflowInstanceState.sameAs(eventType) && result != null) result.currentState = (event.data as unknown as WorkflowInstanceStateTransition).from;
+        if (eventTypes.receiveAdvanceWorkflowInstanceState.sameAs(eventType) && result != null) {
+          const eventData = event.data as unknown as WorkflowInstanceStateTransition;
+          result.currentState = eventData.to;
+          result.commitmentReference = eventData.commitmentReference;
+        }
+        if (eventTypes.rejectAdvanceWorkflowInstanceState.sameAs(eventType) && result != null) {
+          const eventData = event.data as unknown as WorkflowInstanceStateTransition;
+          result.currentState = eventData.from;
+          result.commitmentReference = eventData.commitmentReference;
+        }
       }
     } catch (e) {
       return null;

@@ -180,26 +180,27 @@ export class ConsistencyService implements ConsistencyStrategy, OnModuleInit {
 
   /**
    * Some counterparty wants to advance a certain workflow instance from one state to another.
-   * @param advancement
+   * @param transition
    * @param commitmentReference
    * @private
    */
-  private async onAdvanceExternalWorkflowInstance(advancement: WorkflowInstanceStateAdvancementConsistencyMessage, commitmentReference: string) {
-    const workflowInstance = await this.persistence.getWorkflowInstanceById(advancement.id);
+  private async onAdvanceExternalWorkflowInstance(transition: WorkflowInstanceStateAdvancementConsistencyMessage, commitmentReference: string) {
+    const workflowInstance = await this.persistence.getWorkflowInstanceById(transition.id);
     if (workflowInstance == null) {
       return this.dispatch(consistencyEvents.rejectAdvanceWorkflowInstance({
-        ...advancement, commitmentReference, reason: `Instance with ID "${advancement.id}" does not exist`
+        ...transition, commitmentReference, reason: `Instance with ID "${transition.id}" does not exist`
       }));
     }
 
     const workflow = await this.persistence.getWorkflowById(workflowInstance.workflowId);
     if (workflow == null) {
       return this.dispatch(consistencyEvents.rejectAdvanceWorkflowInstance({
-        ...advancement, commitmentReference, reason: `Workflow with ID "${workflowInstance.workflowId}" does not exist`
+        ...transition, commitmentReference, reason: `Workflow with ID "${workflowInstance.workflowId}" does not exist`
       }));
     }
 
-    return this.dispatch(consistencyEvents.acceptAdvanceWorkflowInstance({ ...advancement, commitmentReference }));
+    await this.persistence.receiveAdvanceWorkflowInstanceState({ ...transition, commitmentReference });
+    return this.dispatch(consistencyEvents.acceptAdvanceWorkflowInstance({ ...transition, commitmentReference }));
   }
 
   /**

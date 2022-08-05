@@ -70,6 +70,9 @@ export class WorkflowService {
     try {
       const service = interpret(stateMachine);
       service.start(previousState);
+
+      // The commitment reference is no longer relevant for this new transition. It will be replaced later on.
+      delete workflowInstance.commitmentReference;
       workflowInstance.currentState = service.send(transition.event, transition.payload) as any;
       service.stop();
     } catch (e) {

@@ -6,11 +6,11 @@ export interface WorkflowInstanceStateTransition {
   to: StateValue | State<any, any>;
   event: string;
   payload?: EventData;
+  commitmentReference?: string;
 }
 
-export type WorkflowInstanceStateTransitionAcceptance = WorkflowInstanceStateTransition & { commitmentReference: string };
+export type WorkflowInstanceStateTransitionAcceptance = WorkflowInstanceStateTransition;
 
 export interface WorkflowInstanceStateTransitionRejection extends WorkflowInstanceStateTransition {
-  commitmentReference: string;
   reason?: string;
 }
