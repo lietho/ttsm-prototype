@@ -7,9 +7,9 @@ import {
   WorkflowInstanceAcceptance,
   WorkflowInstanceProposal,
   WorkflowInstanceRejection,
-  WorkflowInstanceStateAdvancement,
-  WorkflowInstanceStateAdvancementAcceptance,
-  WorkflowInstanceStateAdvancementRejection,
+  WorkflowInstanceStateTransition,
+  WorkflowInstanceStateTransitionAcceptance,
+  WorkflowInstanceStateTransitionRejection,
   WorkflowProposal,
   WorkflowRejection
 } from '../workflow/models';
@@ -160,7 +160,7 @@ export class PersistenceService implements OnModuleInit, OnModuleDestroy {
    * Advances the state of a specific workflow instance.
    * @param advancement
    */
-  async advanceWorkflowInstanceState(advancement: WorkflowInstanceStateAdvancement) {
+  async advanceWorkflowInstanceState(advancement: WorkflowInstanceStateTransition) {
     await this.appendToStream(`instances.${advancement.id}`, eventTypes.advanceWorkflowInstanceState(advancement));
   }
 
@@ -168,7 +168,7 @@ export class PersistenceService implements OnModuleInit, OnModuleDestroy {
    * Accepts a state transition for a given workflow instance.
    * @param acceptance
    */
-  async acceptAdvanceWorkflowInstance(acceptance: WorkflowInstanceStateAdvancementAcceptance) {
+  async acceptAdvanceWorkflowInstance(acceptance: WorkflowInstanceStateTransitionAcceptance) {
     return await this.appendToStream(`instances.${acceptance.id}`, eventTypes.acceptAdvanceWorkflowInstanceState(acceptance));
   }
 
@@ -176,7 +176,7 @@ export class PersistenceService implements OnModuleInit, OnModuleDestroy {
    * Rejects a state transition for a given workflow instance.
    * @param rejection
    */
-  async rejectAdvanceWorkflowInstance(rejection: WorkflowInstanceStateAdvancementRejection) {
+  async rejectAdvanceWorkflowInstance(rejection: WorkflowInstanceStateTransitionRejection) {
     return await this.appendToStream(`instances.${rejection.id}`, eventTypes.rejectAdvanceWorkflowInstanceState(rejection));
   }
 
@@ -213,8 +213,8 @@ export class PersistenceService implements OnModuleInit, OnModuleDestroy {
         if (eventTypes.launchWorkflowInstance.sameAs(eventType)) result = event.data as any as WorkflowInstance;
         if (eventTypes.receiveWorkflowInstance.sameAs(eventType)) result = event.data as any as WorkflowInstance;
         if (eventTypes.rejectWorkflowInstance.sameAs(eventType)) result = null;
-        if (eventTypes.advanceWorkflowInstanceState.sameAs(eventType) && result != null) result.currentState = (event.data as unknown as WorkflowInstanceStateAdvancement).to;
-        if (eventTypes.rejectAdvanceWorkflowInstanceState.sameAs(eventType) && result != null) result.currentState = (event.data as unknown as WorkflowInstanceStateAdvancement).from;
+        if (eventTypes.advanceWorkflowInstanceState.sameAs(eventType) && result != null) result.currentState = (event.data as unknown as WorkflowInstanceStateTransition).to;
+        if (eventTypes.rejectAdvanceWorkflowInstanceState.sameAs(eventType) && result != null) result.currentState = (event.data as unknown as WorkflowInstanceStateTransition).from;
       }
     } catch (e) {
       return null;

@@ -4,9 +4,9 @@ import {
   WorkflowInstanceAcceptance,
   WorkflowInstanceProposal,
   WorkflowInstanceRejection,
-  WorkflowInstanceStateAdvancement,
-  WorkflowInstanceStateAdvancementAcceptance,
-  WorkflowInstanceStateAdvancementRejection,
+  WorkflowInstanceStateTransition,
+  WorkflowInstanceStateTransitionAcceptance,
+  WorkflowInstanceStateTransitionRejection,
   WorkflowProposal,
   WorkflowRejection
 } from '../workflow/models';
@@ -21,6 +21,6 @@ export const receiveWorkflowInstance = createPersistenceEvent<WorkflowInstancePr
 export const acceptWorkflowInstance = createPersistenceEvent<WorkflowInstanceAcceptance>('AcceptWorkflowInstance');
 export const rejectWorkflowInstance = createPersistenceEvent<WorkflowInstanceRejection>('RejectWorkflowInstance');
 
-export const advanceWorkflowInstanceState = createPersistenceEvent<WorkflowInstanceStateAdvancement>('AdvanceWorkflowInstanceState');
-export const acceptAdvanceWorkflowInstanceState = createPersistenceEvent<WorkflowInstanceStateAdvancementAcceptance>('AcceptAdvanceWorkflowInstanceState');
-export const rejectAdvanceWorkflowInstanceState = createPersistenceEvent<WorkflowInstanceStateAdvancementRejection>('RejectAdvanceWorkflowInstanceState');
+export const advanceWorkflowInstanceState = createPersistenceEvent<WorkflowInstanceStateTransition>('AdvanceWorkflowInstanceState');
+export const acceptAdvanceWorkflowInstanceState = createPersistenceEvent<WorkflowInstanceStateTransitionAcceptance>('AcceptAdvanceWorkflowInstanceState');
+export const rejectAdvanceWorkflowInstanceState = createPersistenceEvent<WorkflowInstanceStateTransitionRejection>('RejectAdvanceWorkflowInstanceState');

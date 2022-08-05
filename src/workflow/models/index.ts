@@ -7,4 +7,4 @@ export * from './workflow-instance-acceptance';
 export * from './workflow-instance-rejection';
 export * from './workflow-instance-config';
 export * from './workflow-instance-transition-config';
-export * from './workflow-instance-state-advancement';
+export * from './workflow-instance-state-transition';
