@@ -14,6 +14,7 @@ import {
   WorkflowRejection
 } from '../workflow/models';
 import * as eventTypes from './persistence.events';
+import { advanceWorkflowInstanceState } from './persistence.events';
 
 import { client as eventStore, connect as connectToEventStore } from './eventstoredb';
 import { environment } from '../environment';
@@ -158,10 +159,10 @@ export class PersistenceService implements OnModuleInit, OnModuleDestroy {
 
   /**
    * Advances the state of a specific workflow instance.
-   * @param advancement
+   * @param transition
    */
-  async advanceWorkflowInstanceState(advancement: WorkflowInstanceStateTransition) {
-    await this.appendToStream(`instances.${advancement.id}`, eventTypes.advanceWorkflowInstanceState(advancement));
+  async advanceWorkflowInstanceState(transition: WorkflowInstanceStateTransition) {
+    await this.appendToStream(`instances.${transition.id}`, eventTypes.advanceWorkflowInstanceState(transition));
   }
 
   /**
@@ -215,6 +216,32 @@ export class PersistenceService implements OnModuleInit, OnModuleDestroy {
         if (eventTypes.rejectWorkflowInstance.sameAs(eventType)) result = null;
         if (eventTypes.advanceWorkflowInstanceState.sameAs(eventType) && result != null) result.currentState = (event.data as unknown as WorkflowInstanceStateTransition).to;
         if (eventTypes.rejectAdvanceWorkflowInstanceState.sameAs(eventType) && result != null) result.currentState = (event.data as unknown as WorkflowInstanceStateTransition).from;
+      }
+    } catch (e) {
+      return null;
+    }
+    return result;
+  }
+
+  /**
+   * Returns all payloads attached to state transitions until the given point in time.
+   * @param id Workflow instance ID.
+   * @param until Point in time until which should be search.
+   */
+  async getWorkflowInstanceStateTransitionPayloadsUntil(id: string, until: Date) {
+    const result: { event: string, timestamp: string, payload: any }[] = [];
+    const events = await this.readStream(`instances.${id}`);
+    try {
+      for await (const { event } of events) {
+        const timestamp = new Date(event.created / 10000);
+        if (timestamp.getTime() > until.getTime()) {
+          break;
+        }
+        if (!advanceWorkflowInstanceState.sameAs(event.type)) {
+          continue;
+        }
+        const stateMachineEvent = event.data as unknown as WorkflowInstanceStateTransition;
+        result.push({ event: stateMachineEvent.event, timestamp: timestamp.toISOString(), payload: stateMachineEvent.payload });
       }
     } catch (e) {
       return null;
@@ -294,18 +321,6 @@ export class PersistenceService implements OnModuleInit, OnModuleDestroy {
   }
 
   /**
-   * Reads all events from all streams.
-   */
-  async readAll() {
-    this.logger.debug(`Read all events from all streams`);
-    return eventStore.readAll({
-      direction: 'forwards',
-      fromPosition: 'start',
-      maxCount: 1000
-    });
-  }
-
-  /**
    * Reads all events from the stream with the given name.
    * @param streamName Stream name.
    */
@@ -319,19 +334,9 @@ export class PersistenceService implements OnModuleInit, OnModuleDestroy {
   }
 
   /**
-   * Reads all events backwards from the stream with the given name. Reading backwards
-   * means that the events are traversed from the end of the stream towards the beginning.
-   * @param streamName Stream name.
+   * Checks if the projection with the given name already exists.
+   * @param projectionName Name of the projection to be checked.
    */
-  async readStreamBackwards(streamName: string) {
-    this.logger.debug(`Read all events backwards from stream "${streamName}"`);
-    return eventStore.readStream(streamName, {
-      direction: 'backwards',
-      fromRevision: 'end',
-      maxCount: 1000
-    });
-  }
-
   async existsProjection(projectionName: string) {
     const projections = await eventStore.listProjections();
     for await (const projection of projections) {
@@ -342,6 +347,11 @@ export class PersistenceService implements OnModuleInit, OnModuleDestroy {
     return false;
   }
 
+  /**
+   * Subscribes to ALL events emitted in the event store. This is a volatile subscription which means
+   * that past events are ignored and only events are emitted that were dispatched after subscription.
+   * @param eventHandler Event handler.
+   */
   async subscribeToAll(eventHandler: (resolvedEvent: AllStreamResolvedEvent) => void) {
     const subscription = eventStore.subscribeToAll({ fromPosition: 'end' });
     this.subscriptions.push(subscription);

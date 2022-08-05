@@ -63,7 +63,7 @@ export class WorkflowController {
   })
   @ApiTags('Workflows', 'Time Travel')
   async getWorkflow(@Param('workflowId') workflowId: string,
-                    @Query('until') timestamp: string) {
+                    @Query('until') timestamp?: string) {
     const until = new Date(timestamp);
     if (!isNaN(until.getTime())) {
       return renameConsistencyId(await this.workflowService.getWorkflowStateAt(workflowId, until));
@@ -148,12 +148,47 @@ export class WorkflowController {
   @ApiTags('Workflow Instances', 'Time Travel')
   async getWorkflowInstance(@Param('workflowId') workflowId: string,
                             @Param('instanceId') instanceId: string,
-                            @Query('until') timestamp: string) {
+                            @Query('until') timestamp?: string) {
     const until = new Date(timestamp);
     if (!isNaN(until.getTime())) {
       return renameConsistencyId(await this.workflowService.getWorkflowInstanceStateAt(instanceId, until));
     }
     return renameConsistencyId(await this.workflowService.getWorkflowInstance(workflowId, instanceId));
+  }
+
+  @Get(':workflowId/instances/:instanceId/payloads')
+  @ApiOperation({
+    summary: 'Get workflow instance payloads',
+    description: 'Returns all ever attached state transition (advancement) payloads of the workflow instance with the given ID.'
+  })
+  @ApiParam({
+    name: 'workflowId',
+    example: '44aece41-d6cb-466b-95e4-2d59cf5b2f01',
+    description: 'The ID of the workflow.'
+  })
+  @ApiParam({
+    name: 'instanceId',
+    example: 'eee0dc00-486e-48c7-9d40-3df957a28ac2',
+    description: 'The ID of the instance of a given workflow for which the state transition payloads should be returned.'
+  })
+  @ApiQuery({
+    name: 'until',
+    example: '2022-08-04T12:37:54.097Z',
+    description: 'Enables time-travel by specifying the point in time to which the system should query back.',
+    required: false
+  })
+  @ApiOkResponse({
+    description: 'Workflow instance payloads returned successfully'
+  })
+  @ApiNotFoundResponse({
+    description: 'The workflow instance with the given ID does not exist'
+  })
+  @ApiTags('Workflow Instances', 'Time Travel')
+  async getWorkflowInstanceStateTransitionPayloadsUntil(@Param('workflowId') workflowId: string,
+                                                        @Param('instanceId') instanceId: string,
+                                                        @Query('until') timestamp?: string) {
+    const until = new Date(timestamp ?? Date.now());
+    return await this.workflowService.getWorkflowInstanceStateTransitionPayloadsUntil(instanceId, until);
   }
 
   @Get(':workflowId/instances')
@@ -170,7 +205,7 @@ export class WorkflowController {
     description: 'All workflow instances returned successfully'
   })
   @ApiNotFoundResponse({
-    description: 'The workflow with the given ID do not exist'
+    description: 'The workflow with the given ID does not exist'
   })
   @ApiTags('Workflow Instances')
   async getWorkflowInstancesOfWorkflow(@Param('workflowId') workflowId: string) {

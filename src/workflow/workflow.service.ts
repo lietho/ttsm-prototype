@@ -1,12 +1,11 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
-import { createMachine, MachineConfig, State } from 'xstate';
+import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { createMachine, interpret, MachineConfig, State } from 'xstate';
 
 import { SupportedWorkflowConfig, SupportedWorkflowModels, WorkflowInstanceConfig, WorkflowInstanceTransitionConfig } from './models';
 
 import { convertStateChartWorkflowConfig, StateChartWorkflow } from './converter';
 import { OptimizerService } from '../optimizer';
 import { PersistenceService } from '../persistence';
-import { performStateTransition } from './utils/xstate';
 
 /**
  * The core of the entire system. The workflow service is responsible for advancing existing workflow instances, creating
@@ -14,6 +13,8 @@ import { performStateTransition } from './utils/xstate';
  */
 @Injectable()
 export class WorkflowService {
+
+  private readonly logger = new Logger(WorkflowService.name);
 
   constructor(private persistence: PersistenceService,
               private optimizer: OptimizerService) {
@@ -57,7 +58,7 @@ export class WorkflowService {
     });
   }
 
-  async advanceWorkflowInstance(workflowId: string, instanceId: string, transitionConfig: WorkflowInstanceTransitionConfig) {
+  async advanceWorkflowInstance(workflowId: string, instanceId: string, transition: WorkflowInstanceTransitionConfig) {
     const workflow = await this.persistence.getWorkflowById(workflowId);
     if (workflow == null) throw new NotFoundException(`Workflow with ID "${workflowId}" does not exist`);
 
@@ -66,13 +67,22 @@ export class WorkflowService {
 
     const stateMachine = createMachine(workflow.workflowModel);
     const previousState = workflowInstance.currentState == null ? stateMachine.initialState : State.create(workflowInstance.currentState as any) as any;
-    workflowInstance.currentState = performStateTransition(workflow.workflowModel, previousState, transitionConfig.transition);
+    try {
+      const service = interpret(stateMachine);
+      service.start(previousState);
+      workflowInstance.currentState = service.send(transition.event, transition.payload) as any;
+      service.stop();
+    } catch (e) {
+      this.logger.warn(`Could not perform state transition`, e);
+      throw new BadRequestException(`Could not perform state transition`);
+    }
 
     await this.persistence.advanceWorkflowInstanceState({
       id: instanceId,
       from: previousState,
       to: workflowInstance.currentState,
-      event: transitionConfig.transition
+      event: transition.event,
+      payload: transition.payload
     });
     return workflowInstance;
   }
@@ -87,6 +97,17 @@ export class WorkflowService {
     const state = await this.persistence.getWorkflowInstanceStateAt(id, at);
     if (state == null) throw new NotFoundException(`Workflow instance "${id}" did not exist at ${at.toISOString()}`);
     return state;
+  }
+
+  /**
+   * Returns all payloads attached to state transitions until the given point in time.
+   * @param id Workflow instance ID.
+   * @param until Point in time until which should be search.
+   */
+  async getWorkflowInstanceStateTransitionPayloadsUntil(id: string, until: Date) {
+    const result = await this.persistence.getWorkflowInstanceStateTransitionPayloadsUntil(id, until);
+    if (result == null) throw new NotFoundException(`Workflow instance "${id}" did not exist at ${until.toISOString()}`);
+    return result;
   }
 
   /**
