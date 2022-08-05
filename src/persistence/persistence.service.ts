@@ -12,9 +12,9 @@ import {
   WorkflowInstanceStateTransitionRejection,
   WorkflowProposal,
   WorkflowRejection
-} from '../workflow/models';
+} from '../workflow';
+import { RuleService } from '../rules';
 import * as eventTypes from './persistence.events';
-import { advanceWorkflowInstanceState } from './persistence.events';
 
 import { client as eventStore, connect as connectToEventStore } from './eventstoredb';
 import { environment } from '../environment';
@@ -64,14 +64,27 @@ export class PersistenceService implements OnModuleInit, OnModuleDestroy {
         .outputState();
   `;
 
+  private readonly ruleServicesProjectionName = 'custom-projections.rules.' + randomUUIDv4();
+  private readonly ruleServicesProjection = `
+    fromAll()
+        .when({
+            $init: () => ({ services: {} }),
+            "${eventTypes.registerRuleService.type}": (s, e) => { s.services[e.data.id] = e.data; },
+            "${eventTypes.unregisterRuleService.type}": (s, e) => { delete s.services[e.data.id]; },
+        })
+        .transformBy((state) => state.services)
+        .outputState();
+  `;
+
   /** @inheritDoc */
   async onModuleInit() {
     this.logger.log(`Establishing connection to event store on "${environment.persistenceServiceUrl}"`);
     await connectToEventStore();
 
-    this.logger.log(`Creating event store projections: ${[this.workflowsProjectionName, this.workflowInstancesProjectionName].join(', ')}`);
+    this.logger.log(`Creating event store projections: ${[this.workflowsProjectionName, this.workflowInstancesProjectionName, this.ruleServicesProjectionName].join(', ')}`);
     await eventStore.createProjection(this.workflowsProjectionName, this.workflowsProjection);
     await eventStore.createProjection(this.workflowInstancesProjectionName, this.workflowInstancesProjection);
+    await eventStore.createProjection(this.ruleServicesProjectionName, this.ruleServicesProjection);
   }
 
   /** @inheritDoc */
@@ -87,6 +100,10 @@ export class PersistenceService implements OnModuleInit, OnModuleDestroy {
     if (await this.existsProjection(this.workflowInstancesProjectionName)) {
       await eventStore.disableProjection(this.workflowInstancesProjectionName);
       await eventStore.deleteProjection(this.workflowInstancesProjectionName);
+    }
+    if (await this.existsProjection(this.ruleServicesProjectionName)) {
+      await eventStore.disableProjection(this.ruleServicesProjectionName);
+      await eventStore.deleteProjection(this.ruleServicesProjectionName);
     }
   }
 
@@ -261,7 +278,7 @@ export class PersistenceService implements OnModuleInit, OnModuleDestroy {
         if (timestamp.getTime() > until.getTime()) {
           break;
         }
-        if (!advanceWorkflowInstanceState.sameAs(event.type)) {
+        if (!eventTypes.advanceWorkflowInstanceState.sameAs(event.type)) {
           continue;
         }
         const stateMachineEvent = event.data as unknown as WorkflowInstanceStateTransition;
@@ -310,15 +327,6 @@ export class PersistenceService implements OnModuleInit, OnModuleDestroy {
   }
 
   /**
-   * Returns all workflow instances launched.
-   */
-  async getAllWorkflowInstances() {
-    return Object
-      .entries(await this.getWorkflowInstancesAggregate())
-      .map(([, instance]) => instance);
-  }
-
-  /**
    * Returns the projected aggregate of all workflows.
    * @private
    */
@@ -332,6 +340,49 @@ export class PersistenceService implements OnModuleInit, OnModuleDestroy {
    */
   private async getWorkflowInstancesAggregate() {
     return await eventStore.getProjectionResult<Record<string, WorkflowInstance>>(this.workflowInstancesProjectionName) ?? {};
+  }
+
+  /**
+   * Returns a registered rule service by its ID.
+   * @param id
+   */
+  async getRegisteredRuleServiceById(id: string) {
+    return (await this.getRuleServicesAggregate())[id];
+  }
+
+  /**
+   * Returns all rule services registered.
+   */
+  async getAllRegisteredRuleServices() {
+    return Object
+      .entries(await this.getRuleServicesAggregate())
+      .map(([, ruleService]) => ruleService);
+  }
+
+  /**
+   * Registers a new rule service.
+   * @param ruleService
+   */
+  async registerRuleService(ruleService: Omit<RuleService, 'id'>) {
+    const ruleServiceEntity: RuleService = { ...ruleService, id: randomUUIDv4() };
+    await this.appendToStream(`rules.${ruleService.name}`, eventTypes.registerRuleService(ruleServiceEntity));
+    return ruleServiceEntity;
+  }
+
+  /**
+   * Unregisters an existing rule service.
+   * @param id
+   */
+  async unregisterRuleService(id: string) {
+    return await this.appendToStream(`rules.${id}`, eventTypes.unregisterRuleService({ id }));
+  }
+
+  /**
+   * Returns the projected aggregate of all rule services.
+   * @private
+   */
+  private async getRuleServicesAggregate() {
+    return await eventStore.getProjectionResult<Record<string, RuleService>>(this.ruleServicesProjectionName) ?? {};
   }
 
   /**

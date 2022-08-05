@@ -9,8 +9,10 @@ import {
   WorkflowInstanceStateTransitionRejection,
   WorkflowProposal,
   WorkflowRejection
-} from '../workflow/models';
+} from '../workflow';
+import { RuleService } from '../rules';
 
+// Workflow events
 export const proposeWorkflow = createPersistenceEvent<WorkflowProposal>('ProposeWorkflow');
 export const receiveWorkflow = createPersistenceEvent<WorkflowProposal>('ReceiveWorkflowProposal');
 export const acceptWorkflow = createPersistenceEvent<WorkflowAcceptance>('AcceptWorkflow');
@@ -25,3 +27,7 @@ export const advanceWorkflowInstanceState = createPersistenceEvent<WorkflowInsta
 export const receiveAdvanceWorkflowInstanceState = createPersistenceEvent<WorkflowInstanceStateTransition>('ReceiveAdvanceWorkflowInstanceState');
 export const acceptAdvanceWorkflowInstanceState = createPersistenceEvent<WorkflowInstanceStateTransitionAcceptance>('AcceptAdvanceWorkflowInstanceState');
 export const rejectAdvanceWorkflowInstanceState = createPersistenceEvent<WorkflowInstanceStateTransitionRejection>('RejectAdvanceWorkflowInstanceState');
+
+// Rule engine events
+export const registerRuleService = createPersistenceEvent<RuleService>('RegisterRuleService');
+export const unregisterRuleService = createPersistenceEvent<{ id: string }>('UnregisterRuleService');

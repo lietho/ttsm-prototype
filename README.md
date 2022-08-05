@@ -15,6 +15,7 @@ docker-compose up
 ## Questions:
 
 - Accept and reject of workflows, instances and transitions are implicit. Should the user handle this?
+- Should every participant have her own view of the business process as well?
 
 ## Nice Stuff:
 
