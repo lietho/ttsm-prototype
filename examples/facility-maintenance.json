@@ -1,0 +1,82 @@
+{
+  "id": "Facility Maintenance",
+  "initial": "Building Administrator",
+  "states": {
+    "Maintenance Contractor": {
+      "initial": "Perform maintenance",
+      "states": {
+        "Perform maintenance": {
+          "on": {
+            "Complete maintenance": {
+              "target": "Maintenance complete"
+            },
+            "Order spare parts": {
+              "target": "Waiting for delivery"
+            }
+          }
+        },
+        "Maintenance complete": {
+          "on": {
+            "Notify building administrator": {
+              "target": "#Facility Maintenance.Building Administrator.Inspect maintenance"
+            }
+          }
+        },
+        "Waiting for delivery": {
+          "on": {
+            "Receive spare parts": {
+              "target": "Perform maintenance"
+            }
+          }
+        },
+        "Send invoice and report": {
+          "type": "final"
+        }
+      }
+    },
+    "Building Administrator": {
+      "initial": "Waiting until maintenance is due",
+      "states": {
+        "Waiting until maintenance is due": {
+          "on": {
+            "Maintenance due": {
+              "target": "Preparation"
+            }
+          }
+        },
+        "Preparation": {
+          "type": "parallel",
+          "states": {
+            "Prepare maintenance": {
+              "initial": "Setup facility site",
+              "states": {
+                "Setup facility site": {}
+              }
+            },
+            "Request maintenance": {
+              "initial": "Send request",
+              "states": {
+                "Send request": {}
+              },
+              "on": {
+                "Request maintenance": {
+                  "target": "#Facility Maintenance.Maintenance Contractor"
+                }
+              }
+            }
+          }
+        },
+        "Inspect maintenance": {
+          "on": {
+            "Maintenance accepted": {
+              "target": "#Facility Maintenance.Maintenance Contractor.Send invoice and report"
+            },
+            "Maintenance rejected": {
+              "target": "#Facility Maintenance.Maintenance Contractor.Perform maintenance"
+            }
+          }
+        }
+      }
+    }
+  }
+}

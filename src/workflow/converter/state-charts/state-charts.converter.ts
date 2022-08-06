@@ -3,6 +3,6 @@ import { StateChartWorkflow } from './state-chart-workflow';
 
 export const convertStateChartWorkflowConfig: WorkflowConfigConverter<StateChartWorkflow> = (workflow, config) => ({
   ...workflow,
-  id: config?.name,
+  id: config?.name ?? workflow.id,
   initial: config.initial ?? workflow.initial
 });

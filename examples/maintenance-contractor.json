@@ -1,0 +1,43 @@
+{
+  "id": "Maintenance Contractor",
+  "initial": "Waiting",
+  "states": {
+    "Waiting": {
+      "on": {
+        "Receive maintenance request": {
+          "target": "Perform maintenance"
+        }
+      }
+    },
+    "Perform maintenance": {
+      "on": {
+        "Complete maintenance": {
+          "target": "Maintenance complete"
+        },
+        "Order spare parts": {
+          "target": "Waiting for delivery"
+        }
+      }
+    },
+    "Maintenance complete": {
+      "on": {
+        "Maintenance accepted": {
+          "target": "Send invoice and report"
+        },
+        "Maintenance rejected": {
+          "target": "Perform maintenance"
+        }
+      }
+    },
+    "Waiting for delivery": {
+      "on": {
+        "Receive spare parts": {
+          "target": "Perform maintenance"
+        }
+      }
+    },
+    "Send invoice and report": {
+      "type": "final"
+    }
+  }
+}
