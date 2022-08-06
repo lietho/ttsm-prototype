@@ -1,23 +1,26 @@
 import { Inject, Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { Subject } from 'rxjs';
 
-import {
-  ConsistencyMessage,
-  WorkflowAcceptanceConsistencyMessage,
-  WorkflowInstanceAcceptanceConsistencyMessage,
-  WorkflowInstanceProposalConsistencyMessage,
-  WorkflowInstanceRejectionConsistencyMessage,
-  WorkflowInstanceStateAdvancementAcceptanceConsistencyMessage,
-  WorkflowInstanceStateAdvancementConsistencyMessage,
-  WorkflowInstanceStateAdvancementRejectionConsistencyMessage,
-  WorkflowProposalConsistencyMessage,
-  WorkflowRejectionConsistencyMessage
-} from './models';
+import { ConsistencyMessage } from './models';
 import { ConsistencyStrategy } from './strategies';
 import { ofConsistencyMessage } from './utils';
 import { PersistenceService } from '../persistence';
 import * as consistencyEvents from './consistency.actions';
 import * as persistenceEvents from '../persistence/persistence.events';
+import {
+  WorkflowInstanceParticipantApproval,
+  WorkflowInstanceParticipantDenial,
+  WorkflowInstanceProposal,
+  WorkflowInstanceRuleServiceApproval,
+  WorkflowInstanceTransition,
+  WorkflowInstanceTransitionParticipantApproval,
+  WorkflowInstanceTransitionParticipantDenial,
+  WorkflowInstanceTransitionRuleServiceApproval,
+  WorkflowProposal,
+  WorkflowProposalParticipantApproval,
+  WorkflowProposalParticipantDenial,
+  WorkflowProposalRuleServiceApproval
+} from '../workflow';
 
 
 /**
@@ -53,9 +56,20 @@ export class ConsistencyService implements ConsistencyStrategy, OnModuleInit {
       const eventType = event?.type;
       const eventData = event.data as unknown;
 
-      if (persistenceEvents.proposeWorkflow.sameAs(eventType)) await this.dispatch(consistencyEvents.proposeWorkflow(eventData as WorkflowProposalConsistencyMessage));
-      if (persistenceEvents.launchWorkflowInstance.sameAs(eventType)) await this.dispatch(consistencyEvents.launchWorkflowInstance(eventData as WorkflowInstanceProposalConsistencyMessage));
-      if (persistenceEvents.advanceWorkflowInstanceState.sameAs(eventType)) await this.dispatch(consistencyEvents.advanceWorkflowInstance(eventData as WorkflowInstanceStateAdvancementConsistencyMessage));
+      if (persistenceEvents.proposeWorkflowAcceptedByRuleService.sameAs(eventType)) {
+        const approval = eventData as WorkflowProposalRuleServiceApproval;
+        await this.dispatch(consistencyEvents.proposeWorkflow({ ...approval.proposal }));
+      }
+
+      if (persistenceEvents.launchWorkflowInstanceAcceptedByRuleService.sameAs(eventType)) {
+        const approval = eventData as WorkflowInstanceRuleServiceApproval;
+        await this.dispatch(consistencyEvents.launchWorkflowInstance({ ...approval.proposal }));
+      }
+
+      if (persistenceEvents.advanceWorkflowInstanceAcceptedByRuleService.sameAs(eventType)) {
+        const approval = eventData as WorkflowInstanceTransitionRuleServiceApproval;
+        await this.dispatch(consistencyEvents.advanceWorkflowInstance({ ...approval.transition }));
+      }
     });
 
     this.actions$
@@ -96,7 +110,7 @@ export class ConsistencyService implements ConsistencyStrategy, OnModuleInit {
    * @param commitmentReference
    * @private
    */
-  private async onExternalWorkflowProposal(proposal: WorkflowProposalConsistencyMessage, commitmentReference: string) {
+  private async onExternalWorkflowProposal(proposal: WorkflowProposal, commitmentReference: string) {
     await this.persistence.receiveWorkflow({ ...proposal, commitmentReference });
     return await this.dispatch(consistencyEvents.acceptWorkflow({
       id: proposal.consistencyId,
@@ -107,30 +121,30 @@ export class ConsistencyService implements ConsistencyStrategy, OnModuleInit {
 
   /**
    * Some counterparty accepted the proposed workflow definition.
-   * @param acceptance
+   * @param approval
    * @param commitmentReference
    * @private
    */
-  private async onAcceptExternalWorkflowProposal(acceptance: WorkflowAcceptanceConsistencyMessage, commitmentReference: string) {
-    return await this.persistence.acceptWorkflow({
-      id: acceptance.id,
+  private async onAcceptExternalWorkflowProposal(approval: WorkflowProposalParticipantApproval, commitmentReference: string) {
+    return await this.persistence.workflowProposalAcceptedByParticipant({
+      id: approval.id,
       commitmentReference,
-      proposal: acceptance.proposal
+      proposal: approval.proposal
     });
   }
 
   /**
    * Some counterparty rejected the proposed workflow definition.
-   * @param rejection
+   * @param denial
    * @param commitmentReference
    * @private
    */
-  private async onRejectExternalWorkflowProposal(rejection: WorkflowRejectionConsistencyMessage, commitmentReference: string) {
-    return await this.persistence.rejectWorkflow({
-      id: rejection.id,
+  private async onRejectExternalWorkflowProposal(denial: WorkflowProposalParticipantDenial, commitmentReference: string) {
+    return await this.persistence.workflowProposalRejectedByParticipant({
+      id: denial.id,
       commitmentReference,
-      proposal: rejection.proposal,
-      reason: rejection.reason
+      proposal: denial.proposal,
+      reason: denial.reason
     });
   }
 
@@ -140,7 +154,7 @@ export class ConsistencyService implements ConsistencyStrategy, OnModuleInit {
    * @param commitmentReference
    * @private
    */
-  private async onExternalWorkflowInstanceProposal(proposal: WorkflowInstanceProposalConsistencyMessage, commitmentReference: string) {
+  private async onExternalWorkflowInstanceProposal(proposal: WorkflowInstanceProposal, commitmentReference: string) {
     await this.persistence.receiveWorkflowInstance({ ...proposal, commitmentReference });
     return await this.dispatch(consistencyEvents.acceptWorkflowInstance({
       id: proposal.consistencyId,
@@ -151,30 +165,30 @@ export class ConsistencyService implements ConsistencyStrategy, OnModuleInit {
 
   /**
    * Some counterparty accepted the proposed workflow instance.
-   * @param acceptance
+   * @param approval
    * @param commitmentReference
    * @private
    */
-  private async onAcceptExternalWorkflowInstanceProposal(acceptance: WorkflowInstanceAcceptanceConsistencyMessage, commitmentReference: string) {
-    return await this.persistence.acceptWorkflowInstance({
-      id: acceptance.id,
+  private async onAcceptExternalWorkflowInstanceProposal(approval: WorkflowInstanceParticipantApproval, commitmentReference: string) {
+    return await this.persistence.workflowInstanceAcceptedByParticipant({
+      id: approval.id,
       commitmentReference,
-      proposal: acceptance.proposal
+      proposal: approval.proposal
     });
   }
 
   /**
    * Some counterparty rejected the proposed workflow instance.
-   * @param rejection
+   * @param denial
    * @param commitmentReference
    * @private
    */
-  private async onRejectExternalWorkflowInstanceProposal(rejection: WorkflowInstanceRejectionConsistencyMessage, commitmentReference: string) {
-    return await this.persistence.rejectWorkflowInstance({
-      id: rejection.id,
+  private async onRejectExternalWorkflowInstanceProposal(denial: WorkflowInstanceParticipantDenial, commitmentReference: string) {
+    return await this.persistence.workflowInstanceRejectedByParticipant({
+      id: denial.id,
       commitmentReference,
-      proposal: rejection.proposal,
-      reason: rejection.reason
+      proposal: denial.proposal,
+      reason: denial.reason
     });
   }
 
@@ -184,43 +198,62 @@ export class ConsistencyService implements ConsistencyStrategy, OnModuleInit {
    * @param commitmentReference
    * @private
    */
-  private async onAdvanceExternalWorkflowInstance(transition: WorkflowInstanceStateAdvancementConsistencyMessage, commitmentReference: string) {
+  private async onAdvanceExternalWorkflowInstance(transition: WorkflowInstanceTransition, commitmentReference: string) {
     const workflowInstance = await this.persistence.getWorkflowInstanceById(transition.id);
     if (workflowInstance == null) {
       return this.dispatch(consistencyEvents.rejectAdvanceWorkflowInstance({
-        ...transition, commitmentReference, reason: `Instance with ID "${transition.id}" does not exist`
+        id: transition.id,
+        transition: transition,
+        commitmentReference,
+        reason: `Instance with ID "${transition.id}" does not exist`
       }));
     }
 
     const workflow = await this.persistence.getWorkflowById(workflowInstance.workflowId);
     if (workflow == null) {
       return this.dispatch(consistencyEvents.rejectAdvanceWorkflowInstance({
-        ...transition, commitmentReference, reason: `Workflow with ID "${workflowInstance.workflowId}" does not exist`
+        id: transition.id,
+        transition: transition,
+        commitmentReference,
+        reason: `Workflow with ID "${workflowInstance.workflowId}" does not exist`
       }));
     }
 
     await this.persistence.receiveAdvanceWorkflowInstanceState({ ...transition, commitmentReference });
-    return this.dispatch(consistencyEvents.acceptAdvanceWorkflowInstance({ ...transition, commitmentReference }));
+    return this.dispatch(consistencyEvents.acceptAdvanceWorkflowInstance({
+      id: transition.id,
+      transition,
+      commitmentReference
+    }));
   }
 
   /**
    * Accepts external state transition.
-   * @param rejection
+   * @param approval
    * @param commitmentReference
    * @private
    */
-  private async onAcceptAdvanceExternalWorkflowInstance(rejection: WorkflowInstanceStateAdvancementAcceptanceConsistencyMessage, commitmentReference: string) {
-    return await this.persistence.acceptAdvanceWorkflowInstance({ ...rejection, commitmentReference });
+  private async onAcceptAdvanceExternalWorkflowInstance(approval: WorkflowInstanceTransitionParticipantApproval, commitmentReference: string) {
+    return await this.persistence.acceptAdvanceWorkflowInstance({
+      id: approval.id,
+      commitmentReference,
+      transition: approval.transition
+    });
   }
 
   /**
    * Rejects external state transition.
-   * @param rejection
+   * @param denial
    * @param commitmentReference
    * @private
    */
-  private async onRejectAdvanceExternalWorkflowInstance(rejection: WorkflowInstanceStateAdvancementRejectionConsistencyMessage, commitmentReference: string) {
-    return await this.persistence.rejectAdvanceWorkflowInstance({ ...rejection, commitmentReference });
+  private async onRejectAdvanceExternalWorkflowInstance(denial: WorkflowInstanceTransitionParticipantDenial, commitmentReference: string) {
+    return await this.persistence.rejectAdvanceWorkflowInstance({
+      id: denial.id,
+      transition: denial.transition,
+      commitmentReference,
+      reason: denial.reason
+    });
   }
 
   /** @inheritDoc */

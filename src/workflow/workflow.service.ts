@@ -1,12 +1,11 @@
-import { BadRequestException, ConflictException, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { createMachine, interpret, MachineConfig, State } from 'xstate';
 
-import { SupportedWorkflowConfig, SupportedWorkflowModels, WorkflowInstanceConfig, WorkflowInstanceTransitionConfig } from './models';
+import { SupportedWorkflowConfig, SupportedWorkflowModels, WorkflowInstanceDto, WorkflowInstanceTransitionDto } from './models';
 
 import { convertStateChartWorkflowConfig, StateChartWorkflow } from './converter';
 import { OptimizerService } from '../optimizer';
 import { PersistenceService } from '../persistence';
-import { RulesService } from '../rules';
 
 /**
  * The core of the entire system. The workflow service is responsible for advancing existing workflow instances, creating
@@ -18,8 +17,7 @@ export class WorkflowService {
   private readonly logger = new Logger(WorkflowService.name);
 
   constructor(private persistence: PersistenceService,
-              private optimizer: OptimizerService,
-              private rules: RulesService) {
+              private optimizer: OptimizerService) {
   }
 
   /**
@@ -50,27 +48,22 @@ export class WorkflowService {
    * @param workflowId
    * @param instanceConfig
    */
-  async launchWorkflowInstance(workflowId: string, instanceConfig?: WorkflowInstanceConfig) {
+  async launchWorkflowInstance(workflowId: string, instanceConfig?: WorkflowInstanceDto) {
     const workflow = await this.persistence.getWorkflowById(workflowId);
     if (workflow == null) throw new NotFoundException(`Workflow with ID "${workflowId}" does not exist`);
-
-    // Let the rule engine validate if everything is fine or not
-    const errors = await this.rules.validateLaunchWorkflowInstance({
-      consistencyId: workflow.consistencyId,
-      workflowModel: workflow.workflowModel,
-      config: workflow.config
-    });
-    if (errors.length > 0) {
-      throw new ConflictException(`The rule service(s) reported one or more errors: ${JSON.stringify(errors.map((curr) => `[EC-${curr.errorCode}] ${curr.reason}`).join(', '))}`);
-    }
-
     return await this.persistence.launchWorkflowInstance({
       workflowId,
       currentState: instanceConfig?.initialState
     });
   }
 
-  async advanceWorkflowInstance(workflowId: string, instanceId: string, transition: WorkflowInstanceTransitionConfig) {
+  /**
+   * Requests to advance the workflow instance to the next state.
+   * @param workflowId
+   * @param instanceId
+   * @param transition
+   */
+  async advanceWorkflowInstance(workflowId: string, instanceId: string, transition: WorkflowInstanceTransitionDto) {
     const workflow = await this.persistence.getWorkflowById(workflowId);
     if (workflow == null) throw new NotFoundException(`Workflow with ID "${workflowId}" does not exist`);
 
@@ -80,23 +73,15 @@ export class WorkflowService {
     const stateMachine = createMachine(workflow.workflowModel);
     const previousState = workflowInstance.currentState == null ? stateMachine.initialState : State.create(workflowInstance.currentState as any) as any;
 
-    // Let the rule engine validate if everything is fine or not
-    const errors = await this.rules.validatePerformStateTransition({
-      id: instanceId,
-      from: previousState,
-      event: transition.event,
-      payload: transition.payload
-    });
-    if (errors.length > 0) {
-      throw new ConflictException(`The rule service(s) reported one or more errors: ${JSON.stringify(errors.map((curr) => `[EC-${curr.errorCode}] ${curr.reason}`).join(', '))}`);
-    }
-
     try {
       const service = interpret(stateMachine);
       service.start(previousState);
 
       // The commitment reference is no longer relevant for this new transition. It will be replaced later on.
       delete workflowInstance.commitmentReference;
+      delete workflowInstance.acceptedByRuleServices;
+      delete workflowInstance.acceptedByParticipants;
+      console.log(transition.event, transition.payload);
       workflowInstance.currentState = service.send(transition.event, transition.payload) as any;
       service.stop();
     } catch (e) {

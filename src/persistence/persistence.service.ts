@@ -2,16 +2,22 @@ import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/commo
 import { AllStreamResolvedEvent, jsonEvent, MetadataType, StreamSubscription } from '@eventstore/db-client';
 import {
   Workflow,
-  WorkflowAcceptance,
   WorkflowInstance,
-  WorkflowInstanceAcceptance,
+  WorkflowInstanceParticipantApproval,
+  WorkflowInstanceParticipantDenial,
   WorkflowInstanceProposal,
-  WorkflowInstanceRejection,
-  WorkflowInstanceStateTransition,
-  WorkflowInstanceStateTransitionAcceptance,
-  WorkflowInstanceStateTransitionRejection,
+  WorkflowInstanceRuleServiceApproval,
+  WorkflowInstanceRuleServiceDenial,
+  WorkflowInstanceTransition,
+  WorkflowInstanceTransitionParticipantApproval,
+  WorkflowInstanceTransitionParticipantDenial,
+  WorkflowInstanceTransitionRuleServiceApproval,
+  WorkflowInstanceTransitionRuleServiceDenial,
   WorkflowProposal,
-  WorkflowRejection
+  WorkflowProposalParticipantApproval,
+  WorkflowProposalParticipantDenial,
+  WorkflowProposalRuleServiceApproval,
+  WorkflowProposalRuleServiceDenial
 } from '../workflow';
 import { RuleService } from '../rules';
 import * as eventTypes from './persistence.events';
@@ -35,8 +41,19 @@ export class PersistenceService implements OnModuleInit, OnModuleDestroy {
         .when({
             $init: () => ({ workflows: {} }),
             "${eventTypes.proposeWorkflow.type}": (s, e) => { s.workflows[e.data.consistencyId] = e.data; },
-            "${eventTypes.receiveWorkflow.type}": (s, e) => { s.workflows[e.data.consistencyId] = e.data; },
-            "${eventTypes.rejectWorkflow.type}": (s, e) => { delete s.workflows[e.data.consistencyId]; },
+            "${eventTypes.proposeWorkflowReceived.type}": (s, e) => { s.workflows[e.data.consistencyId] = { ...s.workflows[e.data.consistencyId], ...e.data }; },
+            "${eventTypes.proposeWorkflowAcceptedByRuleService.type}": (s, e) => {
+              if (s.workflows[e.data.id].acceptedByRuleServices !== false) {
+                s.workflows[e.data.id].acceptedByRuleServices = true;
+              }
+            },
+            "${eventTypes.proposeWorkflowRejectedByRuleService.type}": (s, e) => { s.workflows[e.data.id].acceptedByRuleServices = false; },
+            "${eventTypes.proposeWorkflowAcceptedByParticipant.type}": (s, e) => {
+              if (s.workflows[e.data.id].acceptedByParticipants !== false) {
+                s.workflows[e.data.id].acceptedByParticipants = true;
+              }
+            },
+            "${eventTypes.proposeWorkflowRejectedByParticipant.type}": (s, e) => { s.workflows[e.data.id].acceptedByParticipants = false; },
         })
         .transformBy((state) => state.workflows)
         .outputState();
@@ -48,17 +65,41 @@ export class PersistenceService implements OnModuleInit, OnModuleDestroy {
         .when({
             $init: () => ({ instances: {} }),
             "${eventTypes.launchWorkflowInstance.type}": (s, e) => { s.instances[e.data.consistencyId] = e.data; },
-            "${eventTypes.receiveWorkflowInstance.type}": (s, e) => { s.instances[e.data.consistencyId] = e.data; },
-            "${eventTypes.rejectWorkflowInstance.type}": (s, e) => { delete s.instances[e.data.consistencyId]; },
-            "${eventTypes.advanceWorkflowInstanceState.type}": (s, e) => { s.instances[e.data.id].currentState = e.data.to; },
-            "${eventTypes.receiveAdvanceWorkflowInstanceState.type}": (s, e) => {
-                s.instances[e.data.id].currentState = e.data.to;
-                s.instances[e.data.id].commitmentReference = e.data.commitmentReference;
+            "${eventTypes.launchWorkflowInstanceReceived.type}": (s, e) => { s.instances[e.data.consistencyId] = { ...s.instances[e.data.consistencyId], ...e.data }; },
+            "${eventTypes.launchWorkflowInstanceAcceptedByRuleService.type}": (s, e) => {
+              if (s.instances[e.data.id].acceptedByRuleServices !== false) {
+                s.instances[e.data.id].acceptedByRuleServices = true;
+              }
             },
-            "${eventTypes.rejectAdvanceWorkflowInstanceState.type}": (s, e) => {
-                s.instances[e.data.id].currentState = e.data.from;
-                s.instances[e.data.id].commitmentReference = e.data.commitmentReference;
-            }
+            "${eventTypes.launchWorkflowInstanceRejectedByRuleService.type}": (s, e) => { s.instances[e.data.id].acceptedByRuleServices = false; },
+            "${eventTypes.launchWorkflowInstanceAcceptedByParticipant.type}": (s, e) => {
+              if (s.instances[e.data.id].acceptedByParticipants !== false) {
+                s.instances[e.data.id].acceptedByParticipants = true;
+              }
+            },
+            "${eventTypes.launchWorkflowInstanceRejectedByParticipant.type}": (s, e) => { s.instances[e.data.id].acceptedByParticipants = false; },
+            "${eventTypes.advanceWorkflowInstance.type}": (s, e) => { s.instances[e.data.id].currentState = e.data.to; },
+            "${eventTypes.advanceWorkflowInstanceReceived.type}": (s, e) => {
+              s.instances[e.data.id].currentState = e.data.to;
+              s.instances[e.data.id].commitmentReference = e.data.commitmentReference;
+              s.instances[e.data.id].acceptedByParticipants = undefined;
+            },
+            "${eventTypes.advanceWorkflowInstanceAcceptedByParticipant.type}": (s, e) => {
+              if (s.instances[e.data.id].acceptedByParticipants !== false) {
+                s.instances[e.data.id].acceptedByParticipants = true;
+              }
+            },
+            "${eventTypes.advanceWorkflowInstanceRejectedByParticipant.type}": (s, e) => {
+              s.instances[e.data.id].currentState = e.data.from;
+              s.instances[e.data.id].commitmentReference = e.data.commitmentReference;
+              s.instances[e.data.id].acceptedByParticipants = true;
+            },
+            "${eventTypes.advanceWorkflowInstanceAcceptedByRuleService.type}": (s, e) => {
+              if (s.instances[e.data.id].acceptedByRuleServices !== false) {
+                s.instances[e.data.id].acceptedByRuleServices = true;
+              }
+            },
+            "${eventTypes.advanceWorkflowInstanceRejectedByRuleService.type}": (s, e) => { s.instances[e.data.id].acceptedByRuleServices = false; }
         })
         .transformBy((state) => state.instances)
         .outputState();
@@ -125,23 +166,39 @@ export class PersistenceService implements OnModuleInit, OnModuleDestroy {
    * @param proposal
    */
   async receiveWorkflow(proposal: WorkflowProposal) {
-    return await this.appendToStream(`workflows.${proposal.consistencyId}`, eventTypes.receiveWorkflow(proposal));
+    return await this.appendToStream(`workflows.${proposal.consistencyId}`, eventTypes.proposeWorkflowReceived(proposal));
+  }
+
+  /**
+   * The rule services approve the proposal.
+   * @param approval
+   */
+  async workflowProposalAcceptedByRuleService(approval: WorkflowProposalRuleServiceApproval) {
+    return await this.appendToStream(`workflows.${approval.id}`, eventTypes.proposeWorkflowAcceptedByRuleService(approval));
+  }
+
+  /**
+   * The rule services rejected the proposal.
+   * @param denial
+   */
+  async workflowProposalRejectedByRuleService(denial: WorkflowProposalRuleServiceDenial) {
+    return await this.appendToStream(`workflows.${denial.id}`, eventTypes.proposeWorkflowRejectedByRuleService(denial));
   }
 
   /**
    * Accepts a proposed workflow from any of the participants.
    * @param acceptance
    */
-  async acceptWorkflow(acceptance: WorkflowAcceptance) {
-    return await this.appendToStream(`workflows.${acceptance.id}`, eventTypes.acceptWorkflow(acceptance));
+  async workflowProposalAcceptedByParticipant(acceptance: WorkflowProposalParticipantApproval) {
+    return await this.appendToStream(`workflows.${acceptance.id}`, eventTypes.proposeWorkflowAcceptedByParticipant(acceptance));
   }
 
   /**
    * Rejects a proposed workflow from any of the participants.
    * @param rejection
    */
-  async rejectWorkflow(rejection: WorkflowRejection) {
-    return await this.appendToStream(`workflows.${rejection.id}`, eventTypes.rejectWorkflow(rejection));
+  async workflowProposalRejectedByParticipant(rejection: WorkflowProposalParticipantDenial) {
+    return await this.appendToStream(`workflows.${rejection.id}`, eventTypes.proposeWorkflowRejectedByParticipant(rejection));
   }
 
   /**
@@ -162,55 +219,87 @@ export class PersistenceService implements OnModuleInit, OnModuleDestroy {
    * @param proposal
    */
   async receiveWorkflowInstance(proposal: WorkflowInstanceProposal) {
-    return await this.appendToStream(`instances.${proposal.consistencyId}`, eventTypes.receiveWorkflowInstance(proposal));
+    return await this.appendToStream(`instances.${proposal.consistencyId}`, eventTypes.launchWorkflowInstanceReceived(proposal));
+  }
+
+  /**
+   * The rule services approve the workflow instance.
+   * @param approval
+   */
+  async workflowInstanceAcceptedByRuleService(approval: WorkflowInstanceRuleServiceApproval) {
+    return await this.appendToStream(`instances.${approval.id}`, eventTypes.launchWorkflowInstanceAcceptedByRuleService(approval));
+  }
+
+  /**
+   * The rule services rejected the workflow instance.
+   * @param denial
+   */
+  async workflowInstanceRejectedByRuleService(denial: WorkflowInstanceRuleServiceDenial) {
+    return await this.appendToStream(`instances.${denial.id}`, eventTypes.launchWorkflowInstanceRejectedByRuleService(denial));
   }
 
   /**
    * Accepts a proposed workflow instance from any of the participants.
    * @param acceptance
    */
-  async acceptWorkflowInstance(acceptance: WorkflowInstanceAcceptance) {
-    return await this.appendToStream(`instances.${acceptance.id}`, eventTypes.acceptWorkflowInstance(acceptance));
+  async workflowInstanceAcceptedByParticipant(acceptance: WorkflowInstanceParticipantApproval) {
+    return await this.appendToStream(`instances.${acceptance.id}`, eventTypes.launchWorkflowInstanceAcceptedByParticipant(acceptance));
   }
 
   /**
    * Rejects a proposed workflow instance from any of the participants.
    * @param rejection
    */
-  async rejectWorkflowInstance(rejection: WorkflowInstanceRejection) {
-    return await this.appendToStream(`instances.${rejection.id}`, eventTypes.rejectWorkflowInstance(rejection));
+  async workflowInstanceRejectedByParticipant(rejection: WorkflowInstanceParticipantDenial) {
+    return await this.appendToStream(`instances.${rejection.id}`, eventTypes.launchWorkflowInstanceRejectedByParticipant(rejection));
   }
 
   /**
    * Advances the state of a specific workflow instance.
    * @param transition
    */
-  async advanceWorkflowInstanceState(transition: WorkflowInstanceStateTransition) {
-    await this.appendToStream(`instances.${transition.id}`, eventTypes.advanceWorkflowInstanceState(transition));
+  async advanceWorkflowInstanceState(transition: WorkflowInstanceTransition) {
+    await this.appendToStream(`instances.${transition.id}`, eventTypes.advanceWorkflowInstance(transition));
   }
 
   /**
    * A new request to advance the workflow instance state has been received.
    * @param transition
    */
-  async receiveAdvanceWorkflowInstanceState(transition: WorkflowInstanceStateTransition) {
-    await this.appendToStream(`instances.${transition.id}`, eventTypes.receiveAdvanceWorkflowInstanceState(transition));
+  async receiveAdvanceWorkflowInstanceState(transition: WorkflowInstanceTransition) {
+    await this.appendToStream(`instances.${transition.id}`, eventTypes.advanceWorkflowInstanceReceived(transition));
   }
 
   /**
    * Accepts a state transition for a given workflow instance.
    * @param acceptance
    */
-  async acceptAdvanceWorkflowInstance(acceptance: WorkflowInstanceStateTransitionAcceptance) {
-    return await this.appendToStream(`instances.${acceptance.id}`, eventTypes.acceptAdvanceWorkflowInstanceState(acceptance));
+  async acceptAdvanceWorkflowInstance(acceptance: WorkflowInstanceTransitionParticipantApproval) {
+    return await this.appendToStream(`instances.${acceptance.id}`, eventTypes.advanceWorkflowInstanceAcceptedByParticipant(acceptance));
   }
 
   /**
    * Rejects a state transition for a given workflow instance.
    * @param rejection
    */
-  async rejectAdvanceWorkflowInstance(rejection: WorkflowInstanceStateTransitionRejection) {
-    return await this.appendToStream(`instances.${rejection.id}`, eventTypes.rejectAdvanceWorkflowInstanceState(rejection));
+  async rejectAdvanceWorkflowInstance(rejection: WorkflowInstanceTransitionParticipantDenial) {
+    return await this.appendToStream(`instances.${rejection.id}`, eventTypes.advanceWorkflowInstanceRejectedByParticipant(rejection));
+  }
+
+  /**
+   * The rule services approve the workflow instance state transition.
+   * @param approval
+   */
+  async workflowInstanceTransitionAcceptedByRuleService(approval: WorkflowInstanceTransitionRuleServiceApproval) {
+    return await this.appendToStream(`instances.${approval.id}`, eventTypes.advanceWorkflowInstanceAcceptedByRuleService(approval));
+  }
+
+  /**
+   * The rule services rejected the workflow instance state transition.
+   * @param denial
+   */
+  async workflowInstanceTransitionRejectedByRuleService(denial: WorkflowInstanceTransitionRuleServiceDenial) {
+    return await this.appendToStream(`instances.${denial.id}`, eventTypes.advanceWorkflowInstanceRejectedByRuleService(denial));
   }
 
   async getWorkflowStateAt(id: string, at: Date) {
@@ -224,8 +313,12 @@ export class PersistenceService implements OnModuleInit, OnModuleDestroy {
         }
         const eventType = event?.type;
         if (eventTypes.proposeWorkflow.sameAs(eventType)) result = event.data as any as Workflow;
-        if (eventTypes.receiveWorkflow.sameAs(eventType)) result = event.data as any as Workflow;
-        if (eventTypes.rejectWorkflow.sameAs(eventType)) result = null;
+        if (eventTypes.proposeWorkflowReceived.sameAs(eventType)) result = { ...result, ...(event.data as any as Workflow) };
+
+        if (eventTypes.proposeWorkflowAcceptedByRuleService.sameAs(eventType) && result.acceptedByRuleServices !== false) result.acceptedByRuleServices = true;
+        if (eventTypes.proposeWorkflowRejectedByRuleService.sameAs(eventType)) result.acceptedByRuleServices = false;
+        if (eventTypes.proposeWorkflowAcceptedByParticipant.sameAs(eventType) && result.acceptedByParticipants !== false) result.acceptedByParticipants = true;
+        if (eventTypes.proposeWorkflowRejectedByParticipant.sameAs(eventType)) result.acceptedByParticipants = false;
       }
     } catch (e) {
       return null;
@@ -244,19 +337,32 @@ export class PersistenceService implements OnModuleInit, OnModuleDestroy {
         }
         const eventType = event?.type;
         if (eventTypes.launchWorkflowInstance.sameAs(eventType)) result = event.data as any as WorkflowInstance;
-        if (eventTypes.receiveWorkflowInstance.sameAs(eventType)) result = event.data as any as WorkflowInstance;
-        if (eventTypes.rejectWorkflowInstance.sameAs(eventType)) result = null;
-        if (eventTypes.advanceWorkflowInstanceState.sameAs(eventType) && result != null) result.currentState = (event.data as unknown as WorkflowInstanceStateTransition).to;
-        if (eventTypes.receiveAdvanceWorkflowInstanceState.sameAs(eventType) && result != null) {
-          const eventData = event.data as unknown as WorkflowInstanceStateTransition;
+        if (eventTypes.launchWorkflowInstanceReceived.sameAs(eventType)) result = event.data as any as WorkflowInstance;
+
+        if (eventTypes.launchWorkflowInstanceAcceptedByRuleService.sameAs(eventType) && result.acceptedByRuleServices !== false) result.acceptedByRuleServices = true;
+        if (eventTypes.launchWorkflowInstanceRejectedByRuleService.sameAs(eventType)) result.acceptedByRuleServices = false;
+        if (eventTypes.launchWorkflowInstanceAcceptedByParticipant.sameAs(eventType) && result.acceptedByParticipants !== false) result.acceptedByParticipants = true;
+        if (eventTypes.launchWorkflowInstanceRejectedByParticipant.sameAs(eventType)) result.acceptedByParticipants = false;
+
+        if (eventTypes.advanceWorkflowInstance.sameAs(eventType) && result != null) result.currentState = (event.data as unknown as WorkflowInstanceTransition).to;
+        if (eventTypes.advanceWorkflowInstanceReceived.sameAs(eventType) && result != null) {
+          const eventData = event.data as unknown as WorkflowInstanceTransition;
           result.currentState = eventData.to;
           result.commitmentReference = eventData.commitmentReference;
+          result.acceptedByParticipants = undefined;
         }
-        if (eventTypes.rejectAdvanceWorkflowInstanceState.sameAs(eventType) && result != null) {
-          const eventData = event.data as unknown as WorkflowInstanceStateTransition;
+        if (eventTypes.advanceWorkflowInstanceAcceptedByParticipant.sameAs(eventType) && result.acceptedByRuleServices !== false) {
+          result.acceptedByParticipants = true;
+        }
+        if (eventTypes.advanceWorkflowInstanceRejectedByParticipant.sameAs(eventType) && result != null) {
+          const eventData = event.data as unknown as WorkflowInstanceTransition;
           result.currentState = eventData.from;
           result.commitmentReference = eventData.commitmentReference;
+          result.acceptedByParticipants = true;
         }
+
+        if (eventTypes.advanceWorkflowInstanceAcceptedByRuleService.sameAs(eventType) && result.acceptedByRuleServices !== false) result.acceptedByRuleServices = true;
+        if (eventTypes.advanceWorkflowInstanceRejectedByRuleService.sameAs(eventType)) result.acceptedByRuleServices = false;
       }
     } catch (e) {
       return null;
@@ -278,10 +384,10 @@ export class PersistenceService implements OnModuleInit, OnModuleDestroy {
         if (timestamp.getTime() > until.getTime()) {
           break;
         }
-        if (!eventTypes.advanceWorkflowInstanceState.sameAs(event.type)) {
+        if (!eventTypes.advanceWorkflowInstance.sameAs(event.type)) {
           continue;
         }
-        const stateMachineEvent = event.data as unknown as WorkflowInstanceStateTransition;
+        const stateMachineEvent = event.data as unknown as WorkflowInstanceTransition;
         result.push({ event: stateMachineEvent.event, timestamp: timestamp.toISOString(), payload: stateMachineEvent.payload });
       }
     } catch (e) {

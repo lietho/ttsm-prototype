@@ -1,6 +1,6 @@
 import { EventData } from 'xstate';
 
-export class WorkflowInstanceTransitionConfig {
+export class WorkflowInstanceTransitionDto {
   event: string;
   payload: EventData;
 }

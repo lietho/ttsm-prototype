@@ -1,5 +1,5 @@
 import { Body, Controller, Get, Param, Post, Query } from '@nestjs/common';
-import { WorkflowDto, WorkflowInstanceConfig, WorkflowInstanceTransitionConfig } from './models';
+import { WorkflowDto, WorkflowInstanceDto, WorkflowInstanceTransitionDto } from './models';
 import { WorkflowService } from './workflow.service';
 import { ApiConsumes, ApiCreatedResponse, ApiNotFoundResponse, ApiOkResponse, ApiOperation, ApiParam, ApiProduces, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { renameConsistencyId } from './utils';
@@ -89,7 +89,7 @@ export class WorkflowController {
   })
   @ApiTags('Workflow Instances')
   async launchWorkflowInstance(@Param('id') workflowId: string,
-                               @Body() instanceConfig?: WorkflowInstanceConfig) {
+                               @Body() instanceConfig?: WorkflowInstanceDto) {
     return renameConsistencyId(await this.workflowService.launchWorkflowInstance(workflowId, instanceConfig));
   }
 
@@ -114,7 +114,7 @@ export class WorkflowController {
   @ApiTags('Workflow Instances')
   async advanceWorkflowInstance(@Param('workflowId') workflowId: string,
                                 @Param('instanceId') instanceId: string,
-                                @Body() transitionConfig: WorkflowInstanceTransitionConfig) {
+                                @Body() transitionConfig: WorkflowInstanceTransitionDto) {
     return renameConsistencyId(await this.workflowService.advanceWorkflowInstance(workflowId, instanceId, transitionConfig));
   }
 

@@ -16,6 +16,7 @@ docker-compose up
 
 - Accept and reject of workflows, instances and transitions are implicit. Should the user handle this?
 - Should every participant have her own view of the business process as well?
+- Should rule engine verify exchanged data before sending to other participants or after (and also the data of other participants)?
 
 ## Nice Stuff:
 

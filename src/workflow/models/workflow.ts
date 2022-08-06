@@ -1,6 +1,7 @@
 import { MachineConfig } from 'xstate';
 import { WorkflowConfig } from './workflow-config';
 import { ConsistencyEntity } from '../../consistency';
+import { RuleServiceValidationError } from '../../rules';
 
 /**
  * The derived status of a workflow.
@@ -10,9 +11,35 @@ export type WorkflowStatus = 'PENDING' | 'ACCEPTED' | 'REJECTED';
 export interface Workflow extends ConsistencyEntity {
   config?: Partial<WorkflowConfig>;
   workflowModel: MachineConfig<any, any, any>;
+  acceptedByRuleServices?: boolean;
+  acceptedByParticipants?: boolean;
 }
 
 /**
  * Contains all information that is required for a workflow proposal.
  */
 export type WorkflowProposal = Omit<Workflow, 'status'>;
+
+export interface WorkflowProposalRuleServiceApproval {
+  id: string;
+  proposal: WorkflowProposal;
+}
+
+export interface WorkflowProposalRuleServiceDenial {
+  id: string;
+  proposal: WorkflowProposal;
+  validationErrors: RuleServiceValidationError[];
+}
+
+export interface WorkflowProposalParticipantApproval {
+  id: string;
+  commitmentReference: string;
+  proposal: WorkflowProposal;
+}
+
+export interface WorkflowProposalParticipantDenial {
+  id: string;
+  commitmentReference: string;
+  proposal: WorkflowProposal;
+  reason?: string;
+}
