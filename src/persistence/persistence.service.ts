@@ -145,12 +145,31 @@ export class PersistenceService implements OnModuleInit, OnModuleDestroy {
     return proposedWorkflow as Workflow;
   }
 
+  /**
+   * Dispatches a workflow specification event.
+   * @param id Workflow ID.
+   * @param event Event to be dispatched.
+   */
   async dispatchWorkflowEvent<T>(id: string, event: PersistenceEvent<T>) {
     return await this.appendToStream(`workflows.${id}`, event);
   }
 
+  /**
+   * Dispatches a workflow instance event.
+   * @param id Workflow instance ID.
+   * @param event Event to be dispatched.
+   */
   async dispatchInstanceEvent<T>(id: string, event: PersistenceEvent<T>) {
     return await this.appendToStream(`instances.${id}`, event);
+  }
+
+  /**
+   * Dispatches a rules event.
+   * @param id Rule service ID.
+   * @param event Event to be dispatched.
+   */
+  async dispatchRulesEvent<T>(id: string, event: PersistenceEvent<T>) {
+    return await this.appendToStream(`rules.${id}`, event);
   }
 
   /**
@@ -335,24 +354,6 @@ export class PersistenceService implements OnModuleInit, OnModuleDestroy {
     return Object
       .entries(await this.getRuleServicesAggregate())
       .map(([, ruleService]) => ruleService);
-  }
-
-  /**
-   * Registers a new rule service.
-   * @param ruleService
-   */
-  async registerRuleService(ruleService: Omit<RuleService, 'id'>) {
-    const ruleServiceEntity: RuleService = { ...ruleService, id: randomUUIDv4() };
-    await this.appendToStream(`rules.${ruleService.name}`, ruleEventTypes.registerRuleService(ruleServiceEntity));
-    return ruleServiceEntity;
-  }
-
-  /**
-   * Unregisters an existing rule service.
-   * @param id
-   */
-  async unregisterRuleService(id: string) {
-    return await this.appendToStream(`rules.${id}`, ruleEventTypes.unregisterRuleService({ id }));
   }
 
   /**

@@ -2,9 +2,11 @@ import { Injectable, Logger, NotFoundException, OnModuleInit } from '@nestjs/com
 import { HttpService } from '@nestjs/axios';
 import { catchError, combineLatest, firstValueFrom, of } from 'rxjs';
 import { WorkflowInstanceProposal, WorkflowInstanceTransition, WorkflowProposal } from '../workflow';
-import { RuleServiceValidationError } from './models';
+import { RuleService, RuleServiceValidationError } from './models';
 import { PersistenceService } from '../persistence';
 import * as persistenceEvents from '../persistence/persistence.events';
+import * as ruleEvents from './rules.events';
+import { randomUUIDv4 } from '../core/utils';
 
 @Injectable()
 export class RulesService implements OnModuleInit {
@@ -230,7 +232,9 @@ export class RulesService implements OnModuleInit {
     if (url.endsWith('/')) {
       url = url.substring(0, url.length - 1);
     }
-    return await this.persistence.registerRuleService({ name, url });
+    const ruleService: RuleService = { name, url, id: randomUUIDv4() };
+    await this.persistence.dispatchRulesEvent(ruleService.id, ruleEvents.registerRuleService(ruleService));
+    return ruleService;
   }
 
   /**
@@ -240,7 +244,7 @@ export class RulesService implements OnModuleInit {
   async unregisterRuleService(id: string) {
     const ruleService = await this.persistence.getRegisteredRuleServiceById(id);
     if (ruleService == null) throw new NotFoundException(`Rule service "${id}" does not exist`);
-    return await this.persistence.unregisterRuleService(id);
+    await this.persistence.dispatchRulesEvent(id, ruleEvents.unregisterRuleService({ id }));
   }
 
   /**
