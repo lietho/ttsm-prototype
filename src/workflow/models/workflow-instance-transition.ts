@@ -24,12 +24,12 @@ export interface WorkflowInstanceTransitionRuleServiceDenial {
 export interface WorkflowInstanceTransitionParticipantApproval {
   id: string;
   transition: WorkflowInstanceTransition;
-  commitmentReference: string;
+  commitmentReference?: string;
 }
 
 export interface WorkflowInstanceTransitionParticipantDenial {
   id: string;
   transition: WorkflowInstanceTransition;
-  commitmentReference: string;
-  reason?: string;
+  commitmentReference?: string;
+  reasons?: string[];
 }

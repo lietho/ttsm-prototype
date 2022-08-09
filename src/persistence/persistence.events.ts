@@ -5,41 +5,50 @@ import {
   WorkflowInstanceProposal,
   WorkflowInstanceRuleServiceApproval,
   WorkflowInstanceRuleServiceDenial,
-  WorkflowInstanceTransitionParticipantDenial,
   WorkflowInstanceTransition,
   WorkflowInstanceTransitionParticipantApproval,
+  WorkflowInstanceTransitionParticipantDenial,
   WorkflowInstanceTransitionRuleServiceApproval,
   WorkflowInstanceTransitionRuleServiceDenial,
   WorkflowProposal,
+  WorkflowProposalApproval,
+  WorkflowProposalDenial,
   WorkflowProposalParticipantApproval,
   WorkflowProposalParticipantDenial,
   WorkflowProposalRuleServiceApproval,
   WorkflowProposalRuleServiceDenial
 } from '../workflow';
-import { RuleService } from '../rules';
 
-// Workflow events
-export const proposeWorkflow = createPersistenceEvent<WorkflowProposal>('ProposeWorkflow');
-export const proposeWorkflowReceived = createPersistenceEvent<WorkflowProposal>('WorkflowProposalReceived');
-export const proposeWorkflowAcceptedByRuleService = createPersistenceEvent<WorkflowProposalRuleServiceApproval>('WorkflowProposalAcceptedByRuleService');
-export const proposeWorkflowRejectedByRuleService = createPersistenceEvent<WorkflowProposalRuleServiceDenial>('WorkflowProposalRejectedByRuleService');
-export const proposeWorkflowAcceptedByParticipant = createPersistenceEvent<WorkflowProposalParticipantApproval>('WorkflowProposalAcceptedByParticipant');
-export const proposeWorkflowRejectedByParticipant = createPersistenceEvent<WorkflowProposalParticipantDenial>('WorkflowProposalRejectedByParticipant');
+// Workflow commands and events
+export const proposeWorkflow = createPersistenceEvent<WorkflowProposal>('Client.Workflow.Propose');
+export const receivedWorkflow = createPersistenceEvent<WorkflowProposal>('Consistency.Workflow.Received');
+export const localWorkflowAcceptedByRuleService = createPersistenceEvent<WorkflowProposalRuleServiceApproval>('Rules.Workflow.ClientProposalAccepted');
+export const localWorkflowRejectedByRuleService = createPersistenceEvent<WorkflowProposalRuleServiceDenial>('Rules.Workflow.ClientProposalRejected');
+export const receivedWorkflowAcceptedByRuleService = createPersistenceEvent<WorkflowProposalRuleServiceApproval>('Rules.Workflow.ReceivedProposalAccepted');
+export const receivedWorkflowRejectedByRuleService = createPersistenceEvent<WorkflowProposalRuleServiceDenial>('Rules.Workflow.ReceivedProposalRejected');
+export const workflowAcceptedByParticipant = createPersistenceEvent<WorkflowProposalParticipantApproval>('Consistency.Workflow.AcceptedByParticipant');
+export const workflowRejectedByParticipant = createPersistenceEvent<WorkflowProposalParticipantDenial>('Consistency.Workflow.RejectedByParticipant');
+export const workflowAccepted = createPersistenceEvent<WorkflowProposalApproval>('Consistency.Workflow.Accepted');
+export const workflowRejected = createPersistenceEvent<WorkflowProposalDenial>('Consistency.Workflow.Rejected');
 
-export const launchWorkflowInstance = createPersistenceEvent<WorkflowInstanceProposal>('LaunchWorkflowInstance');
-export const launchWorkflowInstanceReceived = createPersistenceEvent<WorkflowInstanceProposal>('WorkflowInstanceReceived');
-export const launchWorkflowInstanceAcceptedByRuleService = createPersistenceEvent<WorkflowInstanceRuleServiceApproval>('WorkflowInstanceAcceptedByRuleService');
-export const launchWorkflowInstanceRejectedByRuleService = createPersistenceEvent<WorkflowInstanceRuleServiceDenial>('WorkflowInstanceRejectedByRuleService');
-export const launchWorkflowInstanceAcceptedByParticipant = createPersistenceEvent<WorkflowInstanceParticipantApproval>('WorkflowInstanceAcceptedByParticipant');
-export const launchWorkflowInstanceRejectedByParticipant = createPersistenceEvent<WorkflowInstanceParticipantDenial>('WorkflowInstanceRejectedByParticipant');
+export const launchWorkflowInstance = createPersistenceEvent<WorkflowInstanceProposal>('Client.Instance.Launch');
+export const receivedWorkflowInstance = createPersistenceEvent<WorkflowInstanceProposal>('Consistency.Instance.Received');
+export const localWorkflowInstanceAcceptedByRuleService = createPersistenceEvent<WorkflowInstanceRuleServiceApproval>('Rules.Instance.ClientProposalAccepted');
+export const localWorkflowInstanceRejectedByRuleService = createPersistenceEvent<WorkflowInstanceRuleServiceDenial>('Rules.Instance.ClientProposalRejected');
+export const receivedWorkflowInstanceAcceptedByRuleService = createPersistenceEvent<WorkflowInstanceRuleServiceApproval>('Rules.Instance.ReceivedProposalAccepted');
+export const receivedWorkflowInstanceRejectedByRuleService = createPersistenceEvent<WorkflowInstanceRuleServiceDenial>('Rules.Instance.ReceivedProposalRejected');
+export const workflowInstanceAcceptedByParticipant = createPersistenceEvent<WorkflowInstanceParticipantApproval>('Consistency.Instance.AcceptedByParticipant');
+export const workflowInstanceRejectedByParticipant = createPersistenceEvent<WorkflowInstanceParticipantDenial>('Consistency.Instance.RejectedByParticipant');
+export const workflowInstanceAccepted = createPersistenceEvent<WorkflowInstanceParticipantApproval>('Consistency.Instance.Accepted');
+export const workflowInstanceRejected = createPersistenceEvent<WorkflowInstanceParticipantDenial>('Consistency.Instance.Rejected');
 
-export const advanceWorkflowInstance = createPersistenceEvent<WorkflowInstanceTransition>('AdvanceWorkflowInstance');
-export const advanceWorkflowInstanceReceived = createPersistenceEvent<WorkflowInstanceTransition>('AdvanceWorkflowInstanceReceived');
-export const advanceWorkflowInstanceAcceptedByRuleService = createPersistenceEvent<WorkflowInstanceTransitionRuleServiceApproval>('AdvanceWorkflowInstanceAcceptedByRuleService');
-export const advanceWorkflowInstanceRejectedByRuleService = createPersistenceEvent<WorkflowInstanceTransitionRuleServiceDenial>('AdvanceWorkflowInstanceRejectedByRuleService');
-export const advanceWorkflowInstanceAcceptedByParticipant = createPersistenceEvent<WorkflowInstanceTransitionParticipantApproval>('AdvanceWorkflowInstanceAcceptedByParticipant');
-export const advanceWorkflowInstanceRejectedByParticipant = createPersistenceEvent<WorkflowInstanceTransitionParticipantDenial>('AdvanceWorkflowInstanceRejectedByParticipant');
-
-// Rule engine events
-export const registerRuleService = createPersistenceEvent<RuleService>('RegisterRuleService');
-export const unregisterRuleService = createPersistenceEvent<{ id: string }>('UnregisterRuleService');
+export const advanceWorkflowInstance = createPersistenceEvent<WorkflowInstanceTransition>('Client.Instance.Advance');
+export const receivedTransition = createPersistenceEvent<WorkflowInstanceTransition>('Consistency.Instance.TransitionReceived');
+export const localTransitionAcceptedByRuleService = createPersistenceEvent<WorkflowInstanceTransitionRuleServiceApproval>('Rules.Instance.ClientTransitionAccepted');
+export const localTransitionRejectedByRuleService = createPersistenceEvent<WorkflowInstanceTransitionRuleServiceDenial>('Rules.Instance.ClientTransitionRejected');
+export const receivedTransitionAcceptedByRuleService = createPersistenceEvent<WorkflowInstanceTransitionRuleServiceApproval>('Rules.Instance.ReceivedTransitionAccepted');
+export const receivedTransitionRejectedByRuleService = createPersistenceEvent<WorkflowInstanceTransitionRuleServiceDenial>('Rules.Instance.ReceivedTransitionRejected');
+export const transitionAcceptedByParticipant = createPersistenceEvent<WorkflowInstanceTransitionParticipantApproval>('Consistency.Instance.TransitionAcceptedByParticipant');
+export const transitionRejectedByParticipant = createPersistenceEvent<WorkflowInstanceTransitionParticipantDenial>('Consistency.Instance.TransitionRejectedByParticipant');
+export const transitionAccepted = createPersistenceEvent<WorkflowInstanceTransitionParticipantApproval>('Consistency.Instance.TransitionAccepted');
+export const transitionRejected = createPersistenceEvent<WorkflowInstanceTransitionParticipantDenial>('Consistency.Instance.TransitionRejected');

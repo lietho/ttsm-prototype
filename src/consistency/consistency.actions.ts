@@ -20,5 +20,5 @@ export const acceptWorkflowInstance = createConsistencyMessage<WorkflowInstanceP
 export const rejectWorkflowInstance = createConsistencyMessage<WorkflowInstanceParticipantDenial>('[Workflow] Reject workflow instance');
 
 export const advanceWorkflowInstance = createConsistencyMessage<WorkflowInstanceTransition>('[Workflow] Advance workflow instance');
-export const acceptAdvanceWorkflowInstance = createConsistencyMessage<WorkflowInstanceTransitionParticipantApproval>('[Workflow] Accept advance workflow instance');
-export const rejectAdvanceWorkflowInstance = createConsistencyMessage<WorkflowInstanceTransitionParticipantDenial>('[Workflow] Reject advance workflow instance');
+export const acceptTransition = createConsistencyMessage<WorkflowInstanceTransitionParticipantApproval>('[Workflow] Accept workflow instance transition');
+export const rejectTransition = createConsistencyMessage<WorkflowInstanceTransitionParticipantDenial>('[Workflow] Reject workflow instance transition');

@@ -25,38 +25,137 @@ export class RulesService implements OnModuleInit {
       const eventData = event.data as unknown;
 
       // Validate against all registered rule services if the proposal is valid
-      if (persistenceEvents.proposeWorkflow.sameAs(eventType)) {
-        const proposal = eventData as WorkflowProposal;
-        const validationErrors = await this.validateWorkflowProposal(proposal);
-        if (validationErrors.length <= 0) {
-          await this.persistence.workflowProposalAcceptedByRuleService({ id: proposal.consistencyId, proposal });
-        } else {
-          await this.persistence.workflowProposalRejectedByRuleService({ id: proposal.consistencyId, proposal, validationErrors });
-        }
-      }
+      if (persistenceEvents.proposeWorkflow.sameAs(eventType)) await this.onLocalWorkflowProposal(eventData as WorkflowProposal);
+      if (persistenceEvents.receivedWorkflow.sameAs(eventType)) await this.onExternalWorkflowProposal(eventData as WorkflowProposal);
 
       // Validate against all registered rule services if the workflow instance launch is valid
-      if (persistenceEvents.launchWorkflowInstance.sameAs(eventType)) {
-        const proposal = eventData as WorkflowInstanceProposal;
-        const validationErrors = await this.validateLaunchWorkflowInstance(proposal);
-        if (validationErrors.length <= 0) {
-          await this.persistence.workflowInstanceAcceptedByRuleService({ id: proposal.consistencyId, proposal });
-        } else {
-          await this.persistence.workflowInstanceRejectedByRuleService({ id: proposal.consistencyId, proposal, validationErrors });
-        }
-      }
+      if (persistenceEvents.launchWorkflowInstance.sameAs(eventType)) await this.onLocalWorkflowInstance(eventData as WorkflowInstanceProposal);
+      if (persistenceEvents.receivedWorkflowInstance.sameAs(eventType)) await this.onExternalWorkflowInstance(eventData as WorkflowInstanceProposal);
 
       // Validate against all registered rule services if the state transition is valid
-      if (persistenceEvents.advanceWorkflowInstance.sameAs(eventType)) {
-        const transition = eventData as WorkflowInstanceTransition;
-        const validationErrors = await this.validatePerformStateTransition(transition);
-        if (validationErrors.length <= 0) {
-          await this.persistence.workflowInstanceTransitionAcceptedByRuleService({ id: transition.id, transition });
-        } else {
-          await this.persistence.workflowInstanceTransitionRejectedByRuleService({ id: transition.id, transition, validationErrors });
-        }
-      }
+      if (persistenceEvents.advanceWorkflowInstance.sameAs(eventType)) await this.onLocalInstanceTransition(eventData as WorkflowInstanceTransition);
+      if (persistenceEvents.receivedTransition.sameAs(eventType)) await this.onExternalInstanceTransition(eventData as WorkflowInstanceTransition);
     });
+  }
+
+  /**
+   * Checks if the local workflow proposal is valid or not and dispatches an appropriate follow up event.
+   * @param proposal
+   * @private
+   */
+  private async onLocalWorkflowProposal(proposal: WorkflowProposal) {
+    const validationErrors = await this.validateWorkflowProposal(proposal);
+    if (validationErrors.length <= 0) {
+      await this.persistence.dispatchInstanceEvent(
+        proposal.consistencyId,
+        persistenceEvents.localWorkflowAcceptedByRuleService({ id: proposal.consistencyId, proposal })
+      );
+    } else {
+      await this.persistence.dispatchInstanceEvent(
+        proposal.consistencyId,
+        persistenceEvents.localWorkflowRejectedByRuleService({ id: proposal.consistencyId, proposal, validationErrors })
+      );
+    }
+  }
+
+  /**
+   * Checks if the external workflow proposal is valid or not and dispatches an appropriate follow up event.
+   * @param proposal
+   * @private
+   */
+  private async onExternalWorkflowProposal(proposal: WorkflowProposal) {
+    const validationErrors = await this.validateWorkflowProposal(proposal);
+    if (validationErrors.length <= 0) {
+      await this.persistence.dispatchInstanceEvent(
+        proposal.consistencyId,
+        persistenceEvents.receivedWorkflowAcceptedByRuleService({ id: proposal.consistencyId, proposal })
+      );
+    } else {
+      await this.persistence.dispatchInstanceEvent(
+        proposal.consistencyId,
+        persistenceEvents.receivedWorkflowRejectedByRuleService({ id: proposal.consistencyId, proposal, validationErrors })
+      );
+    }
+  }
+
+  /**
+   * Checks if the local workflow instance is valid or not and dispatches an appropriate follow up event.
+   * @param proposal
+   * @private
+   */
+  private async onLocalWorkflowInstance(proposal: WorkflowInstanceProposal) {
+    const validationErrors = await this.validateWorkflowInstance(proposal);
+    if (validationErrors.length <= 0) {
+      await this.persistence.dispatchInstanceEvent(
+        proposal.consistencyId,
+        persistenceEvents.localWorkflowInstanceAcceptedByRuleService({ id: proposal.consistencyId, proposal })
+      );
+    } else {
+      await this.persistence.dispatchInstanceEvent(
+        proposal.consistencyId,
+        persistenceEvents.localWorkflowInstanceRejectedByRuleService({ id: proposal.consistencyId, proposal, validationErrors })
+      );
+    }
+  }
+
+  /**
+   * Checks if the external workflow instance is valid or not and dispatches an appropriate follow up event.
+   * @param proposal
+   * @private
+   */
+  private async onExternalWorkflowInstance(proposal: WorkflowInstanceProposal) {
+    const validationErrors = await this.validateWorkflowInstance(proposal);
+    if (validationErrors.length <= 0) {
+      await this.persistence.dispatchInstanceEvent(
+        proposal.consistencyId,
+        persistenceEvents.receivedWorkflowInstanceAcceptedByRuleService({ id: proposal.consistencyId, proposal })
+      );
+    } else {
+      await this.persistence.dispatchInstanceEvent(
+        proposal.consistencyId,
+        persistenceEvents.receivedWorkflowInstanceRejectedByRuleService({ id: proposal.consistencyId, proposal, validationErrors })
+      );
+    }
+  }
+
+  /**
+   * Checks if the local instance transition is valid or not and dispatches an appropriate follow up event.
+   * @param transition
+   * @private
+   */
+  private async onLocalInstanceTransition(transition: WorkflowInstanceTransition) {
+    const validationErrors = await this.validateInstanceTransition(transition);
+    if (validationErrors.length <= 0) {
+      await this.persistence.dispatchInstanceEvent(
+        transition.id,
+        persistenceEvents.localTransitionAcceptedByRuleService({ id: transition.id, transition })
+      );
+    } else {
+      await this.persistence.dispatchInstanceEvent(
+        transition.id,
+        persistenceEvents.localTransitionRejectedByRuleService({ id: transition.id, transition, validationErrors })
+      );
+    }
+  }
+
+  /**
+   * Checks if the external instance transition is valid or not and dispatches an appropriate follow up event.
+   * @param transition
+   * @private
+   */
+  private async onExternalInstanceTransition(transition: WorkflowInstanceTransition) {
+    const validationErrors = await this.validateInstanceTransition(transition);
+    if (validationErrors.length <= 0) {
+      await this.persistence.dispatchInstanceEvent(
+        transition.id,
+        persistenceEvents.receivedTransitionAcceptedByRuleService({ id: transition.id, transition })
+      );
+    } else {
+      await this.persistence.dispatchInstanceEvent(
+        transition.id,
+        persistenceEvents.receivedTransitionRejectedByRuleService({ id: transition.id, transition, validationErrors })
+      );
+    }
   }
 
   /**
@@ -84,7 +183,7 @@ export class RulesService implements OnModuleInit {
    * Checks if the launch of a new workflow instance is allowed.
    * @param proposal Workflow instance to be launched.
    */
-  async validateLaunchWorkflowInstance(proposal: WorkflowInstanceProposal): Promise<RuleServiceValidationError[]> {
+  async validateWorkflowInstance(proposal: WorkflowInstanceProposal): Promise<RuleServiceValidationError[]> {
     const ruleServices = await this.persistence.getAllRegisteredRuleServices();
     if (ruleServices.length <= 0) {
       return [];
@@ -105,7 +204,7 @@ export class RulesService implements OnModuleInit {
    * Checks if a state transition is allowed.
    * @param transition Workflow instance state transition.
    */
-  async validatePerformStateTransition(transition: WorkflowInstanceTransition): Promise<RuleServiceValidationError[]> {
+  async validateInstanceTransition(transition: WorkflowInstanceTransition): Promise<RuleServiceValidationError[]> {
     const ruleServices = await this.persistence.getAllRegisteredRuleServices();
     if (ruleServices.length <= 0) {
       return [];

@@ -32,13 +32,13 @@ export interface WorkflowInstanceRuleServiceDenial {
 
 export interface WorkflowInstanceParticipantApproval {
   id: string;
-  commitmentReference: string;
+  commitmentReference?: string;
   proposal: WorkflowInstanceProposal;
 }
 
 export interface WorkflowInstanceParticipantDenial {
   id: string;
-  commitmentReference: string;
+  commitmentReference?: string;
   proposal: WorkflowInstanceProposal;
-  reason?: string;
+  reasons?: string[];
 }

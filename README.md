@@ -21,3 +21,6 @@ docker-compose up
 ## Nice Stuff:
 
 - Interesting workflows in https://github.com/jan-ladleif/bpm19-blockchain-based-choreographies
+- Event sourcing naming conventions: https://www.eventstore.com/blog/whats-in-an-event-name
+  - Follow the subject.object.predicate pattern (e.g. "system.workflow.proposed")
+- Event sourcing mistakes: http://www.natpryce.com/

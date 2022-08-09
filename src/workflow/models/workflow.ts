@@ -33,13 +33,16 @@ export interface WorkflowProposalRuleServiceDenial {
 
 export interface WorkflowProposalParticipantApproval {
   id: string;
-  commitmentReference: string;
   proposal: WorkflowProposal;
+  commitmentReference?: string;
 }
 
 export interface WorkflowProposalParticipantDenial {
   id: string;
-  commitmentReference: string;
   proposal: WorkflowProposal;
-  reason?: string;
+  reasons?: string[];
+  commitmentReference?: string;
 }
+
+export type WorkflowProposalApproval = WorkflowProposalParticipantApproval;
+export type WorkflowProposalDenial = WorkflowProposalParticipantDenial;
