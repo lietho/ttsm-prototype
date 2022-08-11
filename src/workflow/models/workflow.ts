@@ -13,6 +13,8 @@ export interface Workflow extends ConsistencyEntity {
   workflowModel: MachineConfig<any, any, any>;
   acceptedByRuleServices?: boolean;
   acceptedByParticipants?: boolean;
+  participantsAccepted?: WorkflowProposalParticipantApproval[];
+  participantsRejected?: WorkflowProposalParticipantDenial[];
 }
 
 /**

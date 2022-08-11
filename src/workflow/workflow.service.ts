@@ -81,7 +81,8 @@ export class WorkflowService {
       delete workflowInstance.commitmentReference;
       delete workflowInstance.acceptedByRuleServices;
       delete workflowInstance.acceptedByParticipants;
-      console.log(transition.event, transition.payload);
+      workflowInstance.participantsAccepted = [];
+      workflowInstance.participantsRejected = [];
       workflowInstance.currentState = service.send(transition.event, transition.payload) as any;
       service.stop();
     } catch (e) {

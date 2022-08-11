@@ -1,6 +1,7 @@
 import { State, StateValue } from 'xstate';
 import { ConsistencyEntity } from '../../consistency';
 import { RuleServiceValidationError } from '../../rules';
+import { WorkflowInstanceTransitionParticipantApproval, WorkflowInstanceTransitionParticipantDenial } from './workflow-instance-transition';
 
 /**
  * The derived status of a workflow instance.
@@ -12,6 +13,8 @@ export interface WorkflowInstance extends ConsistencyEntity {
   currentState?: StateValue | State<any, any>;
   acceptedByRuleServices?: boolean;
   acceptedByParticipants?: boolean;
+  participantsAccepted?: WorkflowInstanceTransitionParticipantApproval[] | WorkflowInstanceParticipantApproval[];
+  participantsRejected?: WorkflowInstanceTransitionParticipantDenial[] | WorkflowInstanceParticipantDenial[];
 }
 
 /**

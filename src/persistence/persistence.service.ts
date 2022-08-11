@@ -1,6 +1,18 @@
 import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { AllStreamResolvedEvent, jsonEvent, MetadataType, StreamSubscription } from '@eventstore/db-client';
-import { Workflow, WorkflowInstance, WorkflowInstanceProposal, WorkflowInstanceTransition, WorkflowProposal } from '../workflow';
+import {
+  Workflow,
+  WorkflowInstance,
+  WorkflowInstanceParticipantApproval,
+  WorkflowInstanceParticipantDenial,
+  WorkflowInstanceProposal,
+  WorkflowInstanceTransition,
+  WorkflowInstanceTransitionParticipantApproval,
+  WorkflowInstanceTransitionParticipantDenial,
+  WorkflowProposal,
+  WorkflowProposalParticipantApproval,
+  WorkflowProposalParticipantDenial
+} from '../workflow';
 import { RuleService } from '../rules';
 import * as eventTypes from './persistence.events';
 import * as ruleEventTypes from '../rules/rules.events';
@@ -26,17 +38,13 @@ export class PersistenceService implements OnModuleInit, OnModuleDestroy {
             $init: () => ({ workflows: {} }),
             "${eventTypes.proposeWorkflow.type}": (s, e) => { s.workflows[e.data.consistencyId] = e.data; },
             "${eventTypes.receivedWorkflow.type}": (s, e) => { s.workflows[e.data.consistencyId] = { ...s.workflows[e.data.consistencyId], ...e.data }; },
-            "${eventTypes.localWorkflowAcceptedByRuleService.type}": (s, e) => {
-              if (s.workflows[e.data.id].acceptedByRuleServices !== false) {
-                s.workflows[e.data.id].acceptedByRuleServices = true;
-              }
-            },
+            "${eventTypes.localWorkflowAcceptedByRuleService.type}": (s, e) => { if (s.workflows[e.data.id].acceptedByRuleServices !== false) s.workflows[e.data.id].acceptedByRuleServices = true; },
             "${eventTypes.localWorkflowRejectedByRuleService.type}": (s, e) => { s.workflows[e.data.id].acceptedByRuleServices = false; },
-            "${eventTypes.workflowAccepted.type}": (s, e) => {
-              if (s.workflows[e.data.id].acceptedByParticipants !== false) {
-                s.workflows[e.data.id].acceptedByParticipants = true;
-              }
-            },
+            "${eventTypes.receivedWorkflowAcceptedByRuleService.type}": (s, e) => { if (s.workflows[e.data.id].acceptedByRuleServices !== false) s.workflows[e.data.id].acceptedByRuleServices = true; },
+            "${eventTypes.receivedWorkflowRejectedByRuleService.type}": (s, e) => { s.workflows[e.data.id].acceptedByRuleServices = false; },
+            "${eventTypes.workflowAcceptedByParticipant.type}": (s, e) => { s.workflows[e.data.id].participantsAccepted = [...(s.workflows[e.data.id].participantsAccepted || []), e.data]; },
+            "${eventTypes.workflowRejectedByParticipant.type}": (s, e) => { s.workflows[e.data.id].participantsRejected = [...(s.workflows[e.data.id].participantsRejected || []), e.data] },
+            "${eventTypes.workflowAccepted.type}": (s, e) => { if (s.workflows[e.data.id].acceptedByParticipants !== false) s.workflows[e.data.id].acceptedByParticipants = true; },
             "${eventTypes.workflowRejected.type}": (s, e) => { s.workflows[e.data.id].acceptedByParticipants = false; },
         })
         .transformBy((state) => state.workflows)
@@ -50,40 +58,34 @@ export class PersistenceService implements OnModuleInit, OnModuleDestroy {
             $init: () => ({ instances: {} }),
             "${eventTypes.launchWorkflowInstance.type}": (s, e) => { s.instances[e.data.consistencyId] = e.data; },
             "${eventTypes.receivedWorkflowInstance.type}": (s, e) => { s.instances[e.data.consistencyId] = { ...s.instances[e.data.consistencyId], ...e.data }; },
-            "${eventTypes.localWorkflowInstanceAcceptedByRuleService.type}": (s, e) => {
-              if (s.instances[e.data.id].acceptedByRuleServices !== false) {
-                s.instances[e.data.id].acceptedByRuleServices = true;
-              }
-            },
+            "${eventTypes.localWorkflowInstanceAcceptedByRuleService.type}": (s, e) => { if (s.instances[e.data.id].acceptedByRuleServices !== false) s.instances[e.data.id].acceptedByRuleServices = true; },
             "${eventTypes.localWorkflowInstanceRejectedByRuleService.type}": (s, e) => { s.instances[e.data.id].acceptedByRuleServices = false; },
-            "${eventTypes.workflowInstanceAccepted.type}": (s, e) => {
-              if (s.instances[e.data.id].acceptedByParticipants !== false) {
-                s.instances[e.data.id].acceptedByParticipants = true;
-              }
-            },
+            "${eventTypes.receivedWorkflowInstanceAcceptedByRuleService.type}": (s, e) => { if (s.instances[e.data.id].acceptedByRuleServices !== false) s.instances[e.data.id].acceptedByRuleServices = true; },
+            "${eventTypes.receivedWorkflowInstanceRejectedByRuleService.type}": (s, e) => { s.instances[e.data.id].acceptedByRuleServices = false; },
+            "${eventTypes.workflowInstanceAcceptedByParticipant.type}": (s, e) => { s.instances[e.data.id].participantsAccepted = [...(s.instances[e.data.id].participantsAccepted || []), e.data]; },
+            "${eventTypes.workflowInstanceRejectedByParticipant.type}": (s, e) => { s.instances[e.data.id].participantsRejected = [...(s.instances[e.data.id].participantsRejected || []), e.data]; },
+            "${eventTypes.workflowInstanceAccepted.type}": (s, e) => { if (s.instances[e.data.id].acceptedByParticipants !== false) s.instances[e.data.id].acceptedByParticipants = true; },
             "${eventTypes.workflowInstanceRejected.type}": (s, e) => { s.instances[e.data.id].acceptedByParticipants = false; },
             "${eventTypes.advanceWorkflowInstance.type}": (s, e) => { s.instances[e.data.id].currentState = e.data.to; },
             "${eventTypes.receivedTransition.type}": (s, e) => {
+              s.instances[e.data.id].participantsAccepted = [];
+              s.instances[e.data.id].participantsRejected = [];
               s.instances[e.data.id].currentState = e.data.to;
               s.instances[e.data.id].commitmentReference = e.data.commitmentReference;
               s.instances[e.data.id].acceptedByParticipants = undefined;
             },
-            "${eventTypes.transitionAccepted.type}": (s, e) => {
-              if (s.instances[e.data.id].acceptedByParticipants !== false) {
-                s.instances[e.data.id].acceptedByParticipants = true;
-              }
-            },
+            "${eventTypes.localTransitionAcceptedByRuleService.type}": (s, e) => { if (s.instances[e.data.id].acceptedByRuleServices !== false) s.instances[e.data.id].acceptedByRuleServices = true; },
+            "${eventTypes.localTransitionRejectedByRuleService.type}": (s, e) => { s.instances[e.data.id].acceptedByRuleServices = false; },
+            "${eventTypes.receivedTransitionAcceptedByRuleService.type}": (s, e) => { if (s.instances[e.data.id].acceptedByRuleServices !== false) s.instances[e.data.id].acceptedByRuleServices = true; },
+            "${eventTypes.receivedTransitionRejectedByRuleService.type}": (s, e) => { s.instances[e.data.id].acceptedByRuleServices = false; },
+            "${eventTypes.transitionAcceptedByParticipant.type}": (s, e) => { s.instances[e.data.id].participantsAccepted = [...(s.instances[e.data.id].participantsAccepted || []), e.data]; },
+            "${eventTypes.transitionRejectedByParticipant.type}": (s, e) => { s.instances[e.data.id].participantsRejected = [...(s.instances[e.data.id].participantsRejected || []), e.data]; },
+            "${eventTypes.transitionAccepted.type}": (s, e) => { if (s.instances[e.data.id].acceptedByParticipants !== false) s.instances[e.data.id].acceptedByParticipants = true; },
             "${eventTypes.transitionRejected.type}": (s, e) => {
               s.instances[e.data.id].currentState = e.data.from;
               s.instances[e.data.id].commitmentReference = e.data.commitmentReference;
               s.instances[e.data.id].acceptedByParticipants = true;
             },
-            "${eventTypes.localTransitionAcceptedByRuleService.type}": (s, e) => {
-              if (s.instances[e.data.id].acceptedByRuleServices !== false) {
-                s.instances[e.data.id].acceptedByRuleServices = true;
-              }
-            },
-            "${eventTypes.localTransitionRejectedByRuleService.type}": (s, e) => { s.instances[e.data.id].acceptedByRuleServices = false; }
         })
         .transformBy((state) => state.instances)
         .outputState();
@@ -205,9 +207,12 @@ export class PersistenceService implements OnModuleInit, OnModuleDestroy {
         const eventType = event?.type;
         if (eventTypes.proposeWorkflow.sameAs(eventType)) result = event.data as any as Workflow;
         if (eventTypes.receivedWorkflow.sameAs(eventType)) result = { ...result, ...(event.data as any as Workflow) };
-
         if (eventTypes.localWorkflowAcceptedByRuleService.sameAs(eventType) && result.acceptedByRuleServices !== false) result.acceptedByRuleServices = true;
         if (eventTypes.localWorkflowRejectedByRuleService.sameAs(eventType)) result.acceptedByRuleServices = false;
+        if (eventTypes.receivedWorkflowAcceptedByRuleService.sameAs(eventType) && result.acceptedByRuleServices !== false) result.acceptedByRuleServices = true;
+        if (eventTypes.receivedWorkflowRejectedByRuleService.sameAs(eventType)) result.acceptedByRuleServices = false;
+        if (eventTypes.workflowAcceptedByParticipant.sameAs(eventType)) result.participantsAccepted = [...(result.participantsAccepted ?? []), (event.data as any as WorkflowProposalParticipantApproval)];
+        if (eventTypes.workflowRejectedByParticipant.sameAs(eventType)) result.participantsRejected = [...(result.participantsRejected ?? []), (event.data as any as WorkflowProposalParticipantDenial)];
         if (eventTypes.workflowAccepted.sameAs(eventType) && result.acceptedByParticipants !== false) result.acceptedByParticipants = true;
         if (eventTypes.workflowRejected.sameAs(eventType)) result.acceptedByParticipants = false;
       }
@@ -228,20 +233,32 @@ export class PersistenceService implements OnModuleInit, OnModuleDestroy {
         }
         const eventType = event?.type;
         if (eventTypes.launchWorkflowInstance.sameAs(eventType)) result = event.data as any as WorkflowInstance;
-        if (eventTypes.receivedWorkflowInstance.sameAs(eventType)) result = event.data as any as WorkflowInstance;
+        if (eventTypes.receivedWorkflowInstance.sameAs(eventType)) result = { ...result, ...(event.data as any as WorkflowInstance) };
 
         if (eventTypes.localWorkflowInstanceAcceptedByRuleService.sameAs(eventType) && result.acceptedByRuleServices !== false) result.acceptedByRuleServices = true;
         if (eventTypes.localWorkflowInstanceRejectedByRuleService.sameAs(eventType)) result.acceptedByRuleServices = false;
+        if (eventTypes.receivedWorkflowInstanceAcceptedByRuleService.sameAs(eventType) && result.acceptedByRuleServices !== false) result.acceptedByRuleServices = true;
+        if (eventTypes.receivedWorkflowInstanceRejectedByRuleService.sameAs(eventType)) result.acceptedByRuleServices = false;
+        if (eventTypes.workflowInstanceAcceptedByParticipant.sameAs(eventType)) result.participantsAccepted = [...(result.participantsAccepted ?? []), (event.data as any as WorkflowInstanceParticipantApproval)] as WorkflowInstanceParticipantApproval[];
+        if (eventTypes.workflowInstanceRejectedByParticipant.sameAs(eventType)) result.participantsRejected = [...(result.participantsRejected ?? []), (event.data as any as WorkflowInstanceParticipantDenial)] as WorkflowInstanceParticipantDenial[];
         if (eventTypes.workflowInstanceAccepted.sameAs(eventType) && result.acceptedByParticipants !== false) result.acceptedByParticipants = true;
         if (eventTypes.workflowInstanceRejected.sameAs(eventType)) result.acceptedByParticipants = false;
 
         if (eventTypes.advanceWorkflowInstance.sameAs(eventType) && result != null) result.currentState = (event.data as unknown as WorkflowInstanceTransition).to;
         if (eventTypes.receivedTransition.sameAs(eventType) && result != null) {
           const eventData = event.data as unknown as WorkflowInstanceTransition;
+          result.participantsAccepted = [];
+          result.participantsRejected = [];
           result.currentState = eventData.to;
           result.commitmentReference = eventData.commitmentReference;
           result.acceptedByParticipants = undefined;
         }
+        if (eventTypes.localTransitionAcceptedByRuleService.sameAs(eventType) && result.acceptedByRuleServices !== false) result.acceptedByRuleServices = true;
+        if (eventTypes.localTransitionRejectedByRuleService.sameAs(eventType)) result.acceptedByRuleServices = false;
+        if (eventTypes.receivedTransitionAcceptedByRuleService.sameAs(eventType) && result.acceptedByRuleServices !== false) result.acceptedByRuleServices = true;
+        if (eventTypes.receivedTransitionRejectedByRuleService.sameAs(eventType)) result.acceptedByRuleServices = false;
+        if (eventTypes.transitionAcceptedByParticipant.sameAs(eventType)) result.participantsAccepted = [...(result.participantsAccepted ?? []), (event.data as any as WorkflowInstanceTransitionParticipantApproval)] as WorkflowInstanceTransitionParticipantApproval[];
+        if (eventTypes.transitionRejectedByParticipant.sameAs(eventType)) result.participantsRejected = [...(result.participantsRejected ?? []), (event.data as any as WorkflowInstanceTransitionParticipantDenial)] as WorkflowInstanceTransitionParticipantDenial[];
         if (eventTypes.transitionAccepted.sameAs(eventType) && result.acceptedByRuleServices !== false) {
           result.acceptedByParticipants = true;
         }
@@ -252,8 +269,6 @@ export class PersistenceService implements OnModuleInit, OnModuleDestroy {
           result.acceptedByParticipants = true;
         }
 
-        if (eventTypes.localTransitionAcceptedByRuleService.sameAs(eventType) && result.acceptedByRuleServices !== false) result.acceptedByRuleServices = true;
-        if (eventTypes.localTransitionRejectedByRuleService.sameAs(eventType)) result.acceptedByRuleServices = false;
       }
     } catch (e) {
       return null;

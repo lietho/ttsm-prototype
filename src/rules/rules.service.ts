@@ -48,12 +48,12 @@ export class RulesService implements OnModuleInit {
   private async onLocalWorkflowProposal(proposal: WorkflowProposal) {
     const validationErrors = await this.validateWorkflowProposal(proposal);
     if (validationErrors.length <= 0) {
-      await this.persistence.dispatchInstanceEvent(
+      await this.persistence.dispatchWorkflowEvent(
         proposal.consistencyId,
         persistenceEvents.localWorkflowAcceptedByRuleService({ id: proposal.consistencyId, proposal })
       );
     } else {
-      await this.persistence.dispatchInstanceEvent(
+      await this.persistence.dispatchWorkflowEvent(
         proposal.consistencyId,
         persistenceEvents.localWorkflowRejectedByRuleService({ id: proposal.consistencyId, proposal, validationErrors })
       );
@@ -68,12 +68,12 @@ export class RulesService implements OnModuleInit {
   private async onExternalWorkflowProposal(proposal: WorkflowProposal) {
     const validationErrors = await this.validateWorkflowProposal(proposal);
     if (validationErrors.length <= 0) {
-      await this.persistence.dispatchInstanceEvent(
+      await this.persistence.dispatchWorkflowEvent(
         proposal.consistencyId,
         persistenceEvents.receivedWorkflowAcceptedByRuleService({ id: proposal.consistencyId, proposal })
       );
     } else {
-      await this.persistence.dispatchInstanceEvent(
+      await this.persistence.dispatchWorkflowEvent(
         proposal.consistencyId,
         persistenceEvents.receivedWorkflowRejectedByRuleService({ id: proposal.consistencyId, proposal, validationErrors })
       );
