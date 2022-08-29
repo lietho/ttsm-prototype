@@ -16,6 +16,17 @@ services:
     ports:
       - '1113:1113'
       - '2113:2113'
+  ttsm:
+    container_name: 'ttsm'
+    depends_on:
+      - eventstore.db
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      - PERSISTENCE_SERVICE_URL=esdb://eventstore.db:2113?tls=false
+    ports:
+      - '3000:3000'
 volumes:
   eventstore-volume-data:
   eventstore-volume-logs:
