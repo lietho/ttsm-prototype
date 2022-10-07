@@ -263,7 +263,6 @@ export class ConsistencyService implements ConsistencyStrategy, OnModuleInit {
     await this.persistence.dispatchInstanceEvent(approval.id, persistenceEvents.transitionAcceptedByParticipant({ ...approval, commitmentReference }));
     // Dispatch the follow up event if ALL required parties accepted
     await this.persistence.dispatchInstanceEvent(approval.id, persistenceEvents.transitionAccepted({ ...approval, commitmentReference }));
-
   }
 
   /**

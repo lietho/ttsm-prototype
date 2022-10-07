@@ -2,31 +2,34 @@ version: '3.7'
 
 services:
   eventstore.db:
-    container_name: 'eventstore'
+    container_name: eventstore-${STACK_POSTFIX}
     image: eventstore/eventstore:21.6.0-buster-slim
     environment:
       - EVENTSTORE_CLUSTER_SIZE=1
       - EVENTSTORE_RUN_PROJECTIONS=All
       - EVENTSTORE_START_STANDARD_PROJECTIONS=true
-      - EVENTSTORE_EXT_TCP_PORT=1113
-      - EVENTSTORE_HTTP_PORT=2113
+      - EVENTSTORE_EXT_TCP_PORT=${STACK_EVENTSTORE_TCP_PORT}
+      - EVENTSTORE_HTTP_PORT=${STACK_EVENTSTORE_HTTP_PORT}
       - EVENTSTORE_INSECURE=true
       - EVENTSTORE_ENABLE_EXTERNAL_TCP=true
       - EVENTSTORE_ENABLE_ATOM_PUB_OVER_HTTP=true
     ports:
-      - '1113:1113'
-      - '2113:2113'
+      - '${STACK_EVENTSTORE_TCP_PORT}:${STACK_EVENTSTORE_TCP_PORT}'
+      - '${STACK_EVENTSTORE_HTTP_PORT}:${STACK_EVENTSTORE_HTTP_PORT}'
   ttsm:
-    container_name: 'ttsm'
+    container_name: ttsm-${STACK_POSTFIX}
     depends_on:
       - eventstore.db
     build:
       context: .
       dockerfile: Dockerfile
     environment:
-      - PERSISTENCE_SERVICE_URL=esdb://eventstore.db:2113?tls=false
+      - CONSISTENCY_STRATEGY
+      - CONSISTENCY_P2P_PEER_URLS
+      - CONSISTENCY_EVM_PEER_URLS
+      - CONSISTENCY_EVM_PROVIDER
+      - CONSISTENCY_EVM_CONTRACT_ADDRESS
+      - CONSISTENCY_EVM_CLIENT_ADDRESS
+      - PERSISTENCE_SERVICE_URL
     ports:
-      - '3000:3000'
-volumes:
-  eventstore-volume-data:
-  eventstore-volume-logs:
+      - '${STACK_TTSM_PORT}:3000'

@@ -105,7 +105,7 @@ export class PersistenceService implements OnModuleInit, OnModuleDestroy {
 
   /** @inheritDoc */
   async onModuleInit() {
-    this.logger.log(`Establishing connection to event store on "${environment.persistenceServiceUrl}"`);
+    this.logger.log(`Establishing connection to event store on "${environment.persistence.serviceUrl}"`);
     await connectToEventStore();
 
     this.logger.log(`Creating event store projections: ${[this.workflowsProjectionName, this.workflowInstancesProjectionName, this.ruleServicesProjectionName].join(', ')}`);

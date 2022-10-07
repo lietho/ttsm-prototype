@@ -16,5 +16,5 @@ export interface ConsistencyMessage<T> {
   /**
    * Commitment reference
    */
-  commitmentReference?: string;
+  commitmentReference?: string | any;
 }

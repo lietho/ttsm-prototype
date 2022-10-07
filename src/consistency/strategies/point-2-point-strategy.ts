@@ -26,7 +26,12 @@ export class Point2PointStrategy implements ConsistencyStrategy {
   dispatch<T>(msg: ConsistencyMessage<T>) {
     msg = { ...msg, commitmentReference: randomEthereumAddress() };
     this.logger.debug(`Dispatching new message: ${JSON.stringify(msg)}`);
-    const result = firstValueFrom(this.http.post(environment.consistencyServiceUrl + '/_internal/consistency/p2p', msg));
+    const result = Promise.all(environment.consistency.p2p.peerUrls
+      .map(async (url) => {
+        this.logger.debug(`  - dispatching to "${url}"...`);
+        return await firstValueFrom(this.http.post(url + '/_internal/consistency/p2p', msg));
+      })
+    );
 
     // The sender also has to receive the message
     this.receiveConsistencyMessage(msg);
@@ -35,6 +40,8 @@ export class Point2PointStrategy implements ConsistencyStrategy {
 
   /** @inheritDoc */
   async getStatus() {
-    return firstValueFrom(this.http.get(environment.consistencyServiceUrl + '/ping'));
+    return Promise.all(environment.consistency.p2p.peerUrls
+      .map(async (url) => await firstValueFrom(this.http.get(url + '/ping')))
+    );
   }
 }
