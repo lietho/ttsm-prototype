@@ -6,7 +6,7 @@ import { ConsistencyMessage } from '../models';
 import { environment } from '../../environment';
 import { EvmStrategyAbi } from './evm-strategy.abi';
 import Web3 from 'web3';
-import * as crypto from 'crypto';
+import { ethereumSha256 } from '../../core/utils';
 
 
 /**
@@ -54,30 +54,51 @@ export class EvmStrategy implements ConsistencyStrategy, OnModuleInit {
   }
 
   @Post()
-  receiveConsistencyMessage(@Body() msg: ConsistencyMessage<any>) {
+  async receiveConsistencyMessage(@Body() msg: ConsistencyMessage<any>) {
     this.logger.debug(`Consistency message received: ${JSON.stringify(msg)}`);
+
+    // Retrieve transaction receipt to check if log contains correct message hash
+    const transaction = await this.web3.eth.getTransactionReceipt(msg.commitmentReference.transactionHash);
+
+    // There is no transaction log available, that's weird...
+    if (transaction.logs.length <= 0) {
+      this.logger.warn(`Expected at least one transaction log to be emitted, but got none. Ignoring message...`);
+      return 'NO_EVENT_LOGS';
+    }
+
+    // Do the expected and the actual hash of the message payload differ?
+    const expectedHash = transaction.logs[0].data;
+    const actualHash = ethereumSha256(JSON.stringify(msg.payload));
+    if (expectedHash !== actualHash) {
+      this.logger.warn(`Expected message payload hash "${expectedHash}", but got "${actualHash}". Ignoring message...`);
+      return 'INVALID_HASH';
+    }
+
+    // Everything is fine, go on.
     this.actions$.next(msg);
     return 'OK';
   }
 
   /** @inheritDoc */
   async dispatch<T>(msg: ConsistencyMessage<T>) {
-    const messageAsString = JSON.stringify(msg);
+
+    // Stringify the payload to hash it
+    const messageAsString = JSON.stringify(msg.payload);
     this.logger.debug(`Dispatching new message: ${messageAsString}`);
 
-    const messageHash = '0x' + crypto
-      .createHash('sha256')
-      .update(messageAsString)
-      .digest('hex');
-
+    // Hash the payload of the message ONLY!
+    const messageHash = ethereumSha256(messageAsString);
     this.logger.debug(`Storing SHA-256 message hash on EVM: "${messageHash}"`);
+
+    // Store the hash of the message payload on the EVM and add the transaction result as
+    // commitment reference to the message
     const transactionResult = await this.contract.methods
       .store(messageHash)
       .send({ from: environment.consistency.evm.clientAddress });
-
     msg.commitmentReference = transactionResult;
     this.logger.debug(`Sending message with commitment reference: ${JSON.stringify(msg)}`);
 
+    // Send the message to all peers
     const result = await Promise.all(environment.consistency.evm.peerUrls
       .map(async (url) => {
         this.logger.debug(`Sending message over a peer-to-peer network to "${url}"...`);
@@ -86,7 +107,7 @@ export class EvmStrategy implements ConsistencyStrategy, OnModuleInit {
     );
 
     // The sender also has to receive the message
-    this.receiveConsistencyMessage(msg);
+    await this.receiveConsistencyMessage(msg);
     return result;
   }
 

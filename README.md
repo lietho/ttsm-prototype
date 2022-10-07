@@ -51,7 +51,7 @@ After everything has been configured, you can start your stacks using the launch
 ### Ethereum Virtual Machine (EVM) Strategy
 The EVM strategy uses an Ethereum virtual machine to deploy a smart contract that stores a list of hashes. These hashes are derived from the messages exchanged between participants. To launch this
 strategy, you require some sort of EVM that is capable of hosting smart contracts. An example for such a system, that's rather easy to set up, is [Ganache](https://trufflesuite.com/docs/ganache/).
-Launch your blockchain locally or use an existing testnet and deploy the smart contract ``/contracts/hash-storage.sol``. Everything is pre-configured for the Truffle Suite and should work
+Launch your blockchain locally or use an existing testnet and deploy the smart contract ``/contracts/HashStorage.sol``. Everything is pre-configured for the Truffle Suite and should work
 out-of-the-box using the following command:
 
 ```bash

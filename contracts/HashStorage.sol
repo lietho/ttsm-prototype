@@ -4,20 +4,20 @@ pragma solidity >=0.7.0 <0.9.0;
 
 /**
  * @title Hash Storage
- * @dev Store & retrieve 256-bit hash values
+ * @dev Store 256-bit hash values as event log
  */
 contract HashStorage {
 
     /**
-     * @dev Read this public variable to retrieve the latest hash stored.
+     * @dev Stores all hashes in an append-only event log. Using events reduces gas cost dramatically.
      */
-    bytes32 public latestHash;
+    event StoreHash(bytes32 hash);
 
     /**
      * @dev Stores the given hash as latest hash value.
      * @param hash value to store
      */
     function store(bytes32 hash) public {
-        latestHash = hash;
+        emit StoreHash(hash);
     }
 }

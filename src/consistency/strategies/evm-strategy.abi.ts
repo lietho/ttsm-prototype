@@ -3,17 +3,17 @@
  */
 export const EvmStrategyAbi = [
   {
-    'inputs': [],
-    'name': 'latestHash',
-    'outputs': [
+    'anonymous': false,
+    'inputs': [
       {
+        'indexed': false,
         'internalType': 'bytes32',
-        'name': '',
+        'name': 'hash',
         'type': 'bytes32'
       }
     ],
-    'stateMutability': 'view',
-    'type': 'function'
+    'name': 'StoreHash',
+    'type': 'event'
   },
   {
     'inputs': [

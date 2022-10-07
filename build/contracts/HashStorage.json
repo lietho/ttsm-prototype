@@ -2,18 +2,17 @@
   "contractName": "HashStorage",
   "abi": [
     {
-      "inputs": [],
-      "name": "latestHash",
-      "outputs": [
+      "anonymous": false,
+      "inputs": [
         {
+          "indexed": false,
           "internalType": "bytes32",
-          "name": "",
+          "name": "hash",
           "type": "bytes32"
         }
       ],
-      "stateMutability": "view",
-      "type": "function",
-      "constant": true
+      "name": "StoreHash",
+      "type": "event"
     },
     {
       "inputs": [
@@ -29,9 +28,9 @@
       "type": "function"
     }
   ],
-  "metadata": "{\"compiler\":{\"version\":\"0.8.17+commit.8df45f5f\"},\"language\":\"Solidity\",\"output\":{\"abi\":[{\"inputs\":[],\"name\":\"latestHash\",\"outputs\":[{\"internalType\":\"bytes32\",\"name\":\"\",\"type\":\"bytes32\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"hash\",\"type\":\"bytes32\"}],\"name\":\"store\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}],\"devdoc\":{\"details\":\"Store & retrieve 256-bit hash values\",\"kind\":\"dev\",\"methods\":{\"store(bytes32)\":{\"details\":\"Stores the given hash as latest hash value.\",\"params\":{\"hash\":\"value to store\"}}},\"stateVariables\":{\"latestHash\":{\"details\":\"Read this public variable to retrieve the latest hash stored.\"}},\"title\":\"Hash Storage\",\"version\":1},\"userdoc\":{\"kind\":\"user\",\"methods\":{},\"version\":1}},\"settings\":{\"compilationTarget\":{\"project:/contracts/hash-storage.sol\":\"HashStorage\"},\"evmVersion\":\"london\",\"libraries\":{},\"metadata\":{\"bytecodeHash\":\"ipfs\"},\"optimizer\":{\"enabled\":true,\"runs\":200},\"remappings\":[]},\"sources\":{\"project:/contracts/hash-storage.sol\":{\"keccak256\":\"0x78a48e6844e1e46505abae9e86c1de02f2038f9595eb8ed375b5c1772d25661b\",\"license\":\"GPL-3.0\",\"urls\":[\"bzz-raw://a0970af62021a38a98c6c2ee7a050ebc27798c2e2ae21f66ac3760337210a4db\",\"dweb:/ipfs/QmbcjxVdpNjjGQBpAUoKSvrvdgxK7xYncxb7fDdVJ7hsm3\"]}},\"version\":1}",
-  "bytecode": "0x608060405234801561001057600080fd5b5060b18061001f6000396000f3fe6080604052348015600f57600080fd5b506004361060325760003560e01c8063654cf88c1460375780636f17d258146049575b600080fd5b604760423660046063565b600055565b005b605160005481565b60405190815260200160405180910390f35b600060208284031215607457600080fd5b503591905056fea2646970667358221220259ad608beb1294288a9740a767fed164270d31f901225ce8d688d164478c74d64736f6c63430008110033",
-  "deployedBytecode": "0x6080604052348015600f57600080fd5b506004361060325760003560e01c8063654cf88c1460375780636f17d258146049575b600080fd5b604760423660046063565b600055565b005b605160005481565b60405190815260200160405180910390f35b600060208284031215607457600080fd5b503591905056fea2646970667358221220259ad608beb1294288a9740a767fed164270d31f901225ce8d688d164478c74d64736f6c63430008110033",
+  "metadata": "{\"compiler\":{\"version\":\"0.8.17+commit.8df45f5f\"},\"language\":\"Solidity\",\"output\":{\"abi\":[{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"bytes32\",\"name\":\"hash\",\"type\":\"bytes32\"}],\"name\":\"StoreHash\",\"type\":\"event\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"hash\",\"type\":\"bytes32\"}],\"name\":\"store\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}],\"devdoc\":{\"details\":\"Store 256-bit hash values as event log\",\"events\":{\"StoreHash(bytes32)\":{\"details\":\"Stores all hashes in an append-only event log. Using events reduces gas cost dramatically.\"}},\"kind\":\"dev\",\"methods\":{\"store(bytes32)\":{\"details\":\"Stores the given hash as latest hash value.\",\"params\":{\"hash\":\"value to store\"}}},\"title\":\"Hash Storage\",\"version\":1},\"userdoc\":{\"kind\":\"user\",\"methods\":{},\"version\":1}},\"settings\":{\"compilationTarget\":{\"project:/contracts/HashStorage.sol\":\"HashStorage\"},\"evmVersion\":\"london\",\"libraries\":{},\"metadata\":{\"bytecodeHash\":\"ipfs\"},\"optimizer\":{\"enabled\":true,\"runs\":200},\"remappings\":[]},\"sources\":{\"project:/contracts/HashStorage.sol\":{\"keccak256\":\"0x7ffbb14a87f487b1e539b3fdecc5d6823616086ee617aad1de5991227794cb37\",\"license\":\"GPL-3.0\",\"urls\":[\"bzz-raw://2ad3a6f076d43da1f0a050c0e013b180a20b708f40551f98366e35c969117fdc\",\"dweb:/ipfs/Qmf1ozmkmwCmcXBUnJQzCvsUrgNhbq2P6Ydut1z6m4cJSq\"]}},\"version\":1}",
+  "bytecode": "0x608060405234801561001057600080fd5b5060c28061001f6000396000f3fe6080604052348015600f57600080fd5b506004361060285760003560e01c8063654cf88c14602d575b600080fd5b603c60383660046074565b603e565b005b6040518181527f5e92bd76a4d134c8db2c688f347f17767ef4de921d24e417a08ae3bf91dbf8299060200160405180910390a150565b600060208284031215608557600080fd5b503591905056fea26469706673582212202d3213d0f2c32e25efae26a578167f2402b417b9c424af3016a43e784109131864736f6c63430008110033",
+  "deployedBytecode": "0x6080604052348015600f57600080fd5b506004361060285760003560e01c8063654cf88c14602d575b600080fd5b603c60383660046074565b603e565b005b6040518181527f5e92bd76a4d134c8db2c688f347f17767ef4de921d24e417a08ae3bf91dbf8299060200160405180910390a150565b600060208284031215608557600080fd5b503591905056fea26469706673582212202d3213d0f2c32e25efae26a578167f2402b417b9c424af3016a43e784109131864736f6c63430008110033",
   "immutableReferences": {},
   "generatedSources": [],
   "deployedGeneratedSources": [
@@ -283,18 +282,18 @@
       "name": "#utility.yul"
     }
   ],
-  "sourceMap": "154:342:0:-:0;;;;;;;;;;;;;;;;;;;",
-  "deployedSourceMap": "154:342:0:-:0;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;421:72;;;;;;:::i;:::-;468:10;:17;421:72;;;277:25;;;;;;;;;345::1;;;333:2;318:18;277:25:0;;;;;;;14:180:1;73:6;126:2;114:9;105:7;101:23;97:32;94:52;;;142:1;139;132:12;94:52;-1:-1:-1;165:23:1;;14:180;-1:-1:-1;14:180:1:o",
-  "source": "// SPDX-License-Identifier: GPL-3.0\r\n\r\npragma solidity >=0.7.0 <0.9.0;\r\n\r\n/**\r\n * @title Hash Storage\r\n * @dev Store & retrieve 256-bit hash values\r\n */\r\ncontract HashStorage {\r\n\r\n    /**\r\n     * @dev Read this public variable to retrieve the latest hash stored.\r\n     */\r\n    bytes32 public latestHash;\r\n\r\n    /**\r\n     * @dev Stores the given hash as latest hash value.\r\n     * @param hash value to store\r\n     */\r\n    function store(bytes32 hash) public {\r\n        latestHash = hash;\r\n    }\r\n}\r\n",
-  "sourcePath": "C:\\Users\\danie\\Desktop\\ttsm-prototype\\contracts\\hash-storage.sol",
+  "sourceMap": "156:378:0:-:0;;;;;;;;;;;;;;;;;;;",
+  "deployedSourceMap": "156:378:0:-:0;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;456:75;;;;;;:::i;:::-;;:::i;:::-;;;508:15;;345:25:1;;;508:15:0;;333:2:1;318:18;508:15:0;;;;;;;456:75;:::o;14:180:1:-;73:6;126:2;114:9;105:7;101:23;97:32;94:52;;;142:1;139;132:12;94:52;-1:-1:-1;165:23:1;;14:180;-1:-1:-1;14:180:1:o",
+  "source": "// SPDX-License-Identifier: GPL-3.0\r\n\r\npragma solidity >=0.7.0 <0.9.0;\r\n\r\n/**\r\n * @title Hash Storage\r\n * @dev Store 256-bit hash values as event log\r\n */\r\ncontract HashStorage {\r\n\r\n    /**\r\n     * @dev Stores all hashes in an append-only event log. Using events reduces gas cost dramatically.\r\n     */\r\n    event StoreHash(bytes32 hash);\r\n\r\n    /**\r\n     * @dev Stores the given hash as latest hash value.\r\n     * @param hash value to store\r\n     */\r\n    function store(bytes32 hash) public {\r\n        emit StoreHash(hash);\r\n    }\r\n}\r\n",
+  "sourcePath": "C:\\Users\\danie\\Desktop\\ttsm-prototype\\contracts\\HashStorage.sol",
   "ast": {
-    "absolutePath": "project:/contracts/hash-storage.sol",
+    "absolutePath": "project:/contracts/HashStorage.sol",
     "exportedSymbols": {
       "HashStorage": [
-        17
+        19
       ]
     },
-    "id": 18,
+    "id": 20,
     "license": "GPL-3.0",
     "nodeType": "SourceUnit",
     "nodes": [
@@ -321,130 +320,45 @@
         "documentation": {
           "id": 2,
           "nodeType": "StructuredDocumentation",
-          "src": "74:78:0",
-          "text": " @title Hash Storage\n @dev Store & retrieve 256-bit hash values"
+          "src": "74:80:0",
+          "text": " @title Hash Storage\n @dev Store 256-bit hash values as event log"
         },
         "fullyImplemented": true,
-        "id": 17,
+        "id": 19,
         "linearizedBaseContracts": [
-          17
+          19
         ],
         "name": "HashStorage",
-        "nameLocation": "163:11:0",
+        "nameLocation": "165:11:0",
         "nodeType": "ContractDefinition",
         "nodes": [
           {
-            "constant": false,
+            "anonymous": false,
             "documentation": {
               "id": 3,
               "nodeType": "StructuredDocumentation",
-              "src": "184:87:0",
-              "text": " @dev Read this public variable to retrieve the latest hash stored."
+              "src": "186:116:0",
+              "text": " @dev Stores all hashes in an append-only event log. Using events reduces gas cost dramatically."
             },
-            "functionSelector": "6f17d258",
-            "id": 5,
-            "mutability": "mutable",
-            "name": "latestHash",
-            "nameLocation": "292:10:0",
-            "nodeType": "VariableDeclaration",
-            "scope": 17,
-            "src": "277:25:0",
-            "stateVariable": true,
-            "storageLocation": "default",
-            "typeDescriptions": {
-              "typeIdentifier": "t_bytes32",
-              "typeString": "bytes32"
-            },
-            "typeName": {
-              "id": 4,
-              "name": "bytes32",
-              "nodeType": "ElementaryTypeName",
-              "src": "277:7:0",
-              "typeDescriptions": {
-                "typeIdentifier": "t_bytes32",
-                "typeString": "bytes32"
-              }
-            },
-            "visibility": "public"
-          },
-          {
-            "body": {
-              "id": 15,
-              "nodeType": "Block",
-              "src": "457:36:0",
-              "statements": [
-                {
-                  "expression": {
-                    "id": 13,
-                    "isConstant": false,
-                    "isLValue": false,
-                    "isPure": false,
-                    "lValueRequested": false,
-                    "leftHandSide": {
-                      "id": 11,
-                      "name": "latestHash",
-                      "nodeType": "Identifier",
-                      "overloadedDeclarations": [],
-                      "referencedDeclaration": 5,
-                      "src": "468:10:0",
-                      "typeDescriptions": {
-                        "typeIdentifier": "t_bytes32",
-                        "typeString": "bytes32"
-                      }
-                    },
-                    "nodeType": "Assignment",
-                    "operator": "=",
-                    "rightHandSide": {
-                      "id": 12,
-                      "name": "hash",
-                      "nodeType": "Identifier",
-                      "overloadedDeclarations": [],
-                      "referencedDeclaration": 8,
-                      "src": "481:4:0",
-                      "typeDescriptions": {
-                        "typeIdentifier": "t_bytes32",
-                        "typeString": "bytes32"
-                      }
-                    },
-                    "src": "468:17:0",
-                    "typeDescriptions": {
-                      "typeIdentifier": "t_bytes32",
-                      "typeString": "bytes32"
-                    }
-                  },
-                  "id": 14,
-                  "nodeType": "ExpressionStatement",
-                  "src": "468:17:0"
-                }
-              ]
-            },
-            "documentation": {
-              "id": 6,
-              "nodeType": "StructuredDocumentation",
-              "src": "311:104:0",
-              "text": " @dev Stores the given hash as latest hash value.\n @param hash value to store"
-            },
-            "functionSelector": "654cf88c",
-            "id": 16,
-            "implemented": true,
-            "kind": "function",
-            "modifiers": [],
-            "name": "store",
-            "nameLocation": "430:5:0",
-            "nodeType": "FunctionDefinition",
+            "eventSelector": "5e92bd76a4d134c8db2c688f347f17767ef4de921d24e417a08ae3bf91dbf829",
+            "id": 7,
+            "name": "StoreHash",
+            "nameLocation": "314:9:0",
+            "nodeType": "EventDefinition",
             "parameters": {
-              "id": 9,
+              "id": 6,
               "nodeType": "ParameterList",
               "parameters": [
                 {
                   "constant": false,
-                  "id": 8,
+                  "id": 5,
+                  "indexed": false,
                   "mutability": "mutable",
                   "name": "hash",
-                  "nameLocation": "444:4:0",
+                  "nameLocation": "332:4:0",
                   "nodeType": "VariableDeclaration",
-                  "scope": 16,
-                  "src": "436:12:0",
+                  "scope": 7,
+                  "src": "324:12:0",
                   "stateVariable": false,
                   "storageLocation": "default",
                   "typeDescriptions": {
@@ -452,10 +366,10 @@
                     "typeString": "bytes32"
                   },
                   "typeName": {
-                    "id": 7,
+                    "id": 4,
                     "name": "bytes32",
                     "nodeType": "ElementaryTypeName",
-                    "src": "436:7:0",
+                    "src": "324:7:0",
                     "typeDescriptions": {
                       "typeIdentifier": "t_bytes32",
                       "typeString": "bytes32"
@@ -464,27 +378,139 @@
                   "visibility": "internal"
                 }
               ],
-              "src": "435:14:0"
+              "src": "323:14:0"
+            },
+            "src": "308:30:0"
+          },
+          {
+            "body": {
+              "id": 17,
+              "nodeType": "Block",
+              "src": "492:39:0",
+              "statements": [
+                {
+                  "eventCall": {
+                    "arguments": [
+                      {
+                        "id": 14,
+                        "name": "hash",
+                        "nodeType": "Identifier",
+                        "overloadedDeclarations": [],
+                        "referencedDeclaration": 10,
+                        "src": "518:4:0",
+                        "typeDescriptions": {
+                          "typeIdentifier": "t_bytes32",
+                          "typeString": "bytes32"
+                        }
+                      }
+                    ],
+                    "expression": {
+                      "argumentTypes": [
+                        {
+                          "typeIdentifier": "t_bytes32",
+                          "typeString": "bytes32"
+                        }
+                      ],
+                      "id": 13,
+                      "name": "StoreHash",
+                      "nodeType": "Identifier",
+                      "overloadedDeclarations": [],
+                      "referencedDeclaration": 7,
+                      "src": "508:9:0",
+                      "typeDescriptions": {
+                        "typeIdentifier": "t_function_event_nonpayable$_t_bytes32_$returns$__$",
+                        "typeString": "function (bytes32)"
+                      }
+                    },
+                    "id": 15,
+                    "isConstant": false,
+                    "isLValue": false,
+                    "isPure": false,
+                    "kind": "functionCall",
+                    "lValueRequested": false,
+                    "nameLocations": [],
+                    "names": [],
+                    "nodeType": "FunctionCall",
+                    "src": "508:15:0",
+                    "tryCall": false,
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_tuple$__$",
+                      "typeString": "tuple()"
+                    }
+                  },
+                  "id": 16,
+                  "nodeType": "EmitStatement",
+                  "src": "503:20:0"
+                }
+              ]
+            },
+            "documentation": {
+              "id": 8,
+              "nodeType": "StructuredDocumentation",
+              "src": "346:104:0",
+              "text": " @dev Stores the given hash as latest hash value.\n @param hash value to store"
+            },
+            "functionSelector": "654cf88c",
+            "id": 18,
+            "implemented": true,
+            "kind": "function",
+            "modifiers": [],
+            "name": "store",
+            "nameLocation": "465:5:0",
+            "nodeType": "FunctionDefinition",
+            "parameters": {
+              "id": 11,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 10,
+                  "mutability": "mutable",
+                  "name": "hash",
+                  "nameLocation": "479:4:0",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 18,
+                  "src": "471:12:0",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_bytes32",
+                    "typeString": "bytes32"
+                  },
+                  "typeName": {
+                    "id": 9,
+                    "name": "bytes32",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "471:7:0",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_bytes32",
+                      "typeString": "bytes32"
+                    }
+                  },
+                  "visibility": "internal"
+                }
+              ],
+              "src": "470:14:0"
             },
             "returnParameters": {
-              "id": 10,
+              "id": 12,
               "nodeType": "ParameterList",
               "parameters": [],
-              "src": "457:0:0"
+              "src": "492:0:0"
             },
-            "scope": 17,
-            "src": "421:72:0",
+            "scope": 19,
+            "src": "456:75:0",
             "stateMutability": "nonpayable",
             "virtual": false,
             "visibility": "public"
           }
         ],
-        "scope": 18,
-        "src": "154:342:0",
+        "scope": 20,
+        "src": "156:378:0",
         "usedErrors": []
       }
     ],
-    "src": "39:459:0"
+    "src": "39:497:0"
   },
   "compiler": {
     "name": "solc",
@@ -494,15 +520,20 @@
     "5777": {
       "events": {},
       "links": {},
-      "address": "0x7B53231A9eAeD36D9BE46506a9768b727F318943",
-      "transactionHash": "0x5e1b6b51c28647877acfbbf9dd458c14fd3786ca6db5ec532970f6470229080f"
+      "address": "0x34552A71d0d1e9015331Baacf05f3B06Aba31Ad4",
+      "transactionHash": "0x83ec5ab9f89e63b3a7cb0e7744f9eaf8526ebc215248ed9906f0a31aa2eda2ab"
     }
   },
   "schemaVersion": "3.4.10",
-  "updatedAt": "2022-10-07T17:38:00.540Z",
+  "updatedAt": "2022-10-07T18:09:38.062Z",
   "networkType": "ethereum",
   "devdoc": {
-    "details": "Store & retrieve 256-bit hash values",
+    "details": "Store 256-bit hash values as event log",
+    "events": {
+      "StoreHash(bytes32)": {
+        "details": "Stores all hashes in an append-only event log. Using events reduces gas cost dramatically."
+      }
+    },
     "kind": "dev",
     "methods": {
       "store(bytes32)": {
@@ -510,11 +541,6 @@
         "params": {
           "hash": "value to store"
         }
-      }
-    },
-    "stateVariables": {
-      "latestHash": {
-        "details": "Read this public variable to retrieve the latest hash stored."
       }
     },
     "title": "Hash Storage",
