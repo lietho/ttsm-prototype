@@ -4,25 +4,20 @@ pragma solidity >=0.7.0 <0.9.0;
 
 /**
  * @title Hash Storage
- * @dev Store & retrieve hash values from an array
+ * @dev Store & retrieve 256-bit hash values
  */
 contract HashStorage {
 
-    bytes32[] hashes;
+    /**
+     * @dev Read this public variable to retrieve the latest hash stored.
+     */
+    bytes32 public latestHash;
 
     /**
-     * @dev Appends the given hash to the array.
+     * @dev Stores the given hash as latest hash value.
      * @param hash value to store
      */
     function store(bytes32 hash) public {
-        hashes.push(hash);
-    }
-
-    /**
-     * @dev Return value
-     * @return value of 'number'
-     */
-    function retrieve() public view returns (bytes32[] memory){
-        return hashes;
+        latestHash = hash;
     }
 }

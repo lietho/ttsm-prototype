@@ -4,12 +4,12 @@
 export const EvmStrategyAbi = [
   {
     'inputs': [],
-    'name': 'retrieve',
+    'name': 'latestHash',
     'outputs': [
       {
-        'internalType': 'bytes32[]',
+        'internalType': 'bytes32',
         'name': '',
-        'type': 'bytes32[]'
+        'type': 'bytes32'
       }
     ],
     'stateMutability': 'view',
