@@ -14,7 +14,7 @@ contract HashStorage {
     event StoreHash(bytes32 hash);
 
     /**
-     * @dev Stores the given hash as latest hash value.
+     * @dev Stores the given hash values as event log.
      * @param hash value to store
      */
     function store(bytes32 hash) public {

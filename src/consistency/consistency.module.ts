@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 import { HttpModule } from '@nestjs/axios';
 import { CONSISTENCY_STRATEGY_PROVIDER_TOKEN, ConsistencyService } from './consistency.service';
-import { EvmStrategy, EvmWeb3Provider, NoopStrategy, Point2PointStrategy } from './strategies';
+import { EvmStrategy, EvmStrategyController, EvmWeb3Provider, NoopStrategy, Point2PointStrategy, Point2PointStrategyController } from './strategies';
 import { PersistenceModule } from '../persistence';
 import { environment } from '../environment';
 
@@ -14,7 +14,10 @@ export type SupportedConsistencyStrategies = 'noop' | 'p2p' | 'evm';
 @Module({
   imports: [HttpModule, PersistenceModule],
   exports: [ConsistencyService],
-  controllers: [Point2PointStrategy, EvmStrategy],
+  controllers: [
+    Point2PointStrategyController,
+    EvmStrategyController
+  ],
   providers: [
     ConsistencyService,
     NoopStrategy,

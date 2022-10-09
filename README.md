@@ -88,7 +88,7 @@ If you started you application stacks using Docker, you can use the stop script 
 > stop.sh
 ```
 
-## Nice Stuff:
+## Nice Stuff
 
 - Interesting workflows in https://github.com/jan-ladleif/bpm19-blockchain-based-choreographies
 - Event sourcing naming conventions: https://www.eventstore.com/blog/whats-in-an-event-name

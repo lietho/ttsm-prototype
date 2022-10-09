@@ -7,6 +7,7 @@ import { environment } from '../../environment';
 import { EvmStrategyAbi } from './evm-strategy.abi';
 import Web3 from 'web3';
 import { ethereumSha256 } from '../../core/utils';
+import { performance } from 'perf_hooks';
 
 
 /**
@@ -27,7 +28,6 @@ export const EvmWeb3Provider: Provider = {
  * A consistency strategy that operates on the Ethereum virtual machine. It utilizes a smart contract that stores
  * the hashes of messages exchanged over a peer-to-peer network.
  */
-@Controller('_internal/consistency/evm')
 export class EvmStrategy implements ConsistencyStrategy, OnModuleInit {
 
   private readonly logger = new Logger(EvmStrategy.name);
@@ -53,8 +53,7 @@ export class EvmStrategy implements ConsistencyStrategy, OnModuleInit {
     this.contractAvailable$.next(this.contract);
   }
 
-  @Post()
-  async receiveConsistencyMessage(@Body() msg: ConsistencyMessage<any>) {
+  async receiveConsistencyMessage<T>(msg: ConsistencyMessage<T>) {
     this.logger.debug(`Consistency message received: ${JSON.stringify(msg)}`);
 
     // Retrieve transaction receipt to check if log contains correct message hash
@@ -92,10 +91,15 @@ export class EvmStrategy implements ConsistencyStrategy, OnModuleInit {
 
     // Store the hash of the message payload on the EVM and add the transaction result as
     // commitment reference to the message
+    const finalityRequestTime = performance.now();
     const transactionResult = await this.contract.methods
       .store(messageHash)
       .send({ from: environment.consistency.evm.clientAddress });
-    msg.commitmentReference = transactionResult;
+    const finalityCompletionTime = performance.now();
+    msg.commitmentReference = {
+      ...transactionResult,
+      finalityDuration: (finalityCompletionTime - finalityRequestTime)
+    };
     this.logger.debug(`Sending message with commitment reference: ${JSON.stringify(msg)}`);
 
     // Send the message to all peers
@@ -116,5 +120,20 @@ export class EvmStrategy implements ConsistencyStrategy, OnModuleInit {
     return Promise.all(environment.consistency.evm.peerUrls
       .map(async (url) => await firstValueFrom(this.http.get(url + '/ping')))
     );
+  }
+}
+
+/**
+ * Dedicated controller instance to prevent a second instance of the strategy to be created.
+ */
+@Controller('_internal/consistency/evm')
+export class EvmStrategyController {
+
+  constructor(private evmStrategy: EvmStrategy) {
+  }
+
+  @Post()
+  async receiveConsistencyMessage<T>(@Body() msg: ConsistencyMessage<T>) {
+    return await this.evmStrategy.receiveConsistencyMessage(msg);
   }
 }

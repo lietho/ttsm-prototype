@@ -28,9 +28,9 @@
       "type": "function"
     }
   ],
-  "metadata": "{\"compiler\":{\"version\":\"0.8.17+commit.8df45f5f\"},\"language\":\"Solidity\",\"output\":{\"abi\":[{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"bytes32\",\"name\":\"hash\",\"type\":\"bytes32\"}],\"name\":\"StoreHash\",\"type\":\"event\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"hash\",\"type\":\"bytes32\"}],\"name\":\"store\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}],\"devdoc\":{\"details\":\"Store 256-bit hash values as event log\",\"events\":{\"StoreHash(bytes32)\":{\"details\":\"Stores all hashes in an append-only event log. Using events reduces gas cost dramatically.\"}},\"kind\":\"dev\",\"methods\":{\"store(bytes32)\":{\"details\":\"Stores the given hash as latest hash value.\",\"params\":{\"hash\":\"value to store\"}}},\"title\":\"Hash Storage\",\"version\":1},\"userdoc\":{\"kind\":\"user\",\"methods\":{},\"version\":1}},\"settings\":{\"compilationTarget\":{\"project:/contracts/HashStorage.sol\":\"HashStorage\"},\"evmVersion\":\"london\",\"libraries\":{},\"metadata\":{\"bytecodeHash\":\"ipfs\"},\"optimizer\":{\"enabled\":true,\"runs\":200},\"remappings\":[]},\"sources\":{\"project:/contracts/HashStorage.sol\":{\"keccak256\":\"0x7ffbb14a87f487b1e539b3fdecc5d6823616086ee617aad1de5991227794cb37\",\"license\":\"GPL-3.0\",\"urls\":[\"bzz-raw://2ad3a6f076d43da1f0a050c0e013b180a20b708f40551f98366e35c969117fdc\",\"dweb:/ipfs/Qmf1ozmkmwCmcXBUnJQzCvsUrgNhbq2P6Ydut1z6m4cJSq\"]}},\"version\":1}",
-  "bytecode": "0x608060405234801561001057600080fd5b5060c28061001f6000396000f3fe6080604052348015600f57600080fd5b506004361060285760003560e01c8063654cf88c14602d575b600080fd5b603c60383660046074565b603e565b005b6040518181527f5e92bd76a4d134c8db2c688f347f17767ef4de921d24e417a08ae3bf91dbf8299060200160405180910390a150565b600060208284031215608557600080fd5b503591905056fea26469706673582212202d3213d0f2c32e25efae26a578167f2402b417b9c424af3016a43e784109131864736f6c63430008110033",
-  "deployedBytecode": "0x6080604052348015600f57600080fd5b506004361060285760003560e01c8063654cf88c14602d575b600080fd5b603c60383660046074565b603e565b005b6040518181527f5e92bd76a4d134c8db2c688f347f17767ef4de921d24e417a08ae3bf91dbf8299060200160405180910390a150565b600060208284031215608557600080fd5b503591905056fea26469706673582212202d3213d0f2c32e25efae26a578167f2402b417b9c424af3016a43e784109131864736f6c63430008110033",
+  "metadata": "{\"compiler\":{\"version\":\"0.8.17+commit.8df45f5f\"},\"language\":\"Solidity\",\"output\":{\"abi\":[{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"bytes32\",\"name\":\"hash\",\"type\":\"bytes32\"}],\"name\":\"StoreHash\",\"type\":\"event\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"hash\",\"type\":\"bytes32\"}],\"name\":\"store\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}],\"devdoc\":{\"details\":\"Store 256-bit hash values as event log\",\"events\":{\"StoreHash(bytes32)\":{\"details\":\"Stores all hashes in an append-only event log. Using events reduces gas cost dramatically.\"}},\"kind\":\"dev\",\"methods\":{\"store(bytes32)\":{\"details\":\"Stores the given hash values as event log.\",\"params\":{\"hash\":\"value to store\"}}},\"title\":\"Hash Storage\",\"version\":1},\"userdoc\":{\"kind\":\"user\",\"methods\":{},\"version\":1}},\"settings\":{\"compilationTarget\":{\"project:/contracts/HashStorage.sol\":\"HashStorage\"},\"evmVersion\":\"london\",\"libraries\":{},\"metadata\":{\"bytecodeHash\":\"ipfs\"},\"optimizer\":{\"enabled\":true,\"runs\":200},\"remappings\":[]},\"sources\":{\"project:/contracts/HashStorage.sol\":{\"keccak256\":\"0xd2bf9d8ea4fcd7ed211ccf6d3173771590c086572c00ccc9508e0736c56f79c8\",\"license\":\"GPL-3.0\",\"urls\":[\"bzz-raw://29be3cdfd09689326feb3655009e471c80479b277843463d2664375c6eba33a6\",\"dweb:/ipfs/QmSiV5Q8FeH5uWHTVuGPmbsSDjHa9Ve45gvNaAP7v9CnFC\"]}},\"version\":1}",
+  "bytecode": "0x608060405234801561001057600080fd5b5060c28061001f6000396000f3fe6080604052348015600f57600080fd5b506004361060285760003560e01c8063654cf88c14602d575b600080fd5b603c60383660046074565b603e565b005b6040518181527f5e92bd76a4d134c8db2c688f347f17767ef4de921d24e417a08ae3bf91dbf8299060200160405180910390a150565b600060208284031215608557600080fd5b503591905056fea264697066735822122077681463bd9149eb02073de63398e875f7826bf73dadd2de4716fb7ac30eeb1064736f6c63430008110033",
+  "deployedBytecode": "0x6080604052348015600f57600080fd5b506004361060285760003560e01c8063654cf88c14602d575b600080fd5b603c60383660046074565b603e565b005b6040518181527f5e92bd76a4d134c8db2c688f347f17767ef4de921d24e417a08ae3bf91dbf8299060200160405180910390a150565b600060208284031215608557600080fd5b503591905056fea264697066735822122077681463bd9149eb02073de63398e875f7826bf73dadd2de4716fb7ac30eeb1064736f6c63430008110033",
   "immutableReferences": {},
   "generatedSources": [],
   "deployedGeneratedSources": [
@@ -282,9 +282,9 @@
       "name": "#utility.yul"
     }
   ],
-  "sourceMap": "156:378:0:-:0;;;;;;;;;;;;;;;;;;;",
-  "deployedSourceMap": "156:378:0:-:0;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;456:75;;;;;;:::i;:::-;;:::i;:::-;;;508:15;;345:25:1;;;508:15:0;;333:2:1;318:18;508:15:0;;;;;;;456:75;:::o;14:180:1:-;73:6;126:2;114:9;105:7;101:23;97:32;94:52;;;142:1;139;132:12;94:52;-1:-1:-1;165:23:1;;14:180;-1:-1:-1;14:180:1:o",
-  "source": "// SPDX-License-Identifier: GPL-3.0\r\n\r\npragma solidity >=0.7.0 <0.9.0;\r\n\r\n/**\r\n * @title Hash Storage\r\n * @dev Store 256-bit hash values as event log\r\n */\r\ncontract HashStorage {\r\n\r\n    /**\r\n     * @dev Stores all hashes in an append-only event log. Using events reduces gas cost dramatically.\r\n     */\r\n    event StoreHash(bytes32 hash);\r\n\r\n    /**\r\n     * @dev Stores the given hash as latest hash value.\r\n     * @param hash value to store\r\n     */\r\n    function store(bytes32 hash) public {\r\n        emit StoreHash(hash);\r\n    }\r\n}\r\n",
+  "sourceMap": "156:377:0:-:0;;;;;;;;;;;;;;;;;;;",
+  "deployedSourceMap": "156:377:0:-:0;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;455:75;;;;;;:::i;:::-;;:::i;:::-;;;507:15;;345:25:1;;;507:15:0;;333:2:1;318:18;507:15:0;;;;;;;455:75;:::o;14:180:1:-;73:6;126:2;114:9;105:7;101:23;97:32;94:52;;;142:1;139;132:12;94:52;-1:-1:-1;165:23:1;;14:180;-1:-1:-1;14:180:1:o",
+  "source": "// SPDX-License-Identifier: GPL-3.0\r\n\r\npragma solidity >=0.7.0 <0.9.0;\r\n\r\n/**\r\n * @title Hash Storage\r\n * @dev Store 256-bit hash values as event log\r\n */\r\ncontract HashStorage {\r\n\r\n    /**\r\n     * @dev Stores all hashes in an append-only event log. Using events reduces gas cost dramatically.\r\n     */\r\n    event StoreHash(bytes32 hash);\r\n\r\n    /**\r\n     * @dev Stores the given hash values as event log.\r\n     * @param hash value to store\r\n     */\r\n    function store(bytes32 hash) public {\r\n        emit StoreHash(hash);\r\n    }\r\n}\r\n",
   "sourcePath": "C:\\Users\\danie\\Desktop\\ttsm-prototype\\contracts\\HashStorage.sol",
   "ast": {
     "absolutePath": "project:/contracts/HashStorage.sol",
@@ -386,7 +386,7 @@
             "body": {
               "id": 17,
               "nodeType": "Block",
-              "src": "492:39:0",
+              "src": "491:39:0",
               "statements": [
                 {
                   "eventCall": {
@@ -397,7 +397,7 @@
                         "nodeType": "Identifier",
                         "overloadedDeclarations": [],
                         "referencedDeclaration": 10,
-                        "src": "518:4:0",
+                        "src": "517:4:0",
                         "typeDescriptions": {
                           "typeIdentifier": "t_bytes32",
                           "typeString": "bytes32"
@@ -416,7 +416,7 @@
                       "nodeType": "Identifier",
                       "overloadedDeclarations": [],
                       "referencedDeclaration": 7,
-                      "src": "508:9:0",
+                      "src": "507:9:0",
                       "typeDescriptions": {
                         "typeIdentifier": "t_function_event_nonpayable$_t_bytes32_$returns$__$",
                         "typeString": "function (bytes32)"
@@ -431,7 +431,7 @@
                     "nameLocations": [],
                     "names": [],
                     "nodeType": "FunctionCall",
-                    "src": "508:15:0",
+                    "src": "507:15:0",
                     "tryCall": false,
                     "typeDescriptions": {
                       "typeIdentifier": "t_tuple$__$",
@@ -440,15 +440,15 @@
                   },
                   "id": 16,
                   "nodeType": "EmitStatement",
-                  "src": "503:20:0"
+                  "src": "502:20:0"
                 }
               ]
             },
             "documentation": {
               "id": 8,
               "nodeType": "StructuredDocumentation",
-              "src": "346:104:0",
-              "text": " @dev Stores the given hash as latest hash value.\n @param hash value to store"
+              "src": "346:103:0",
+              "text": " @dev Stores the given hash values as event log.\n @param hash value to store"
             },
             "functionSelector": "654cf88c",
             "id": 18,
@@ -456,7 +456,7 @@
             "kind": "function",
             "modifiers": [],
             "name": "store",
-            "nameLocation": "465:5:0",
+            "nameLocation": "464:5:0",
             "nodeType": "FunctionDefinition",
             "parameters": {
               "id": 11,
@@ -467,10 +467,10 @@
                   "id": 10,
                   "mutability": "mutable",
                   "name": "hash",
-                  "nameLocation": "479:4:0",
+                  "nameLocation": "478:4:0",
                   "nodeType": "VariableDeclaration",
                   "scope": 18,
-                  "src": "471:12:0",
+                  "src": "470:12:0",
                   "stateVariable": false,
                   "storageLocation": "default",
                   "typeDescriptions": {
@@ -481,7 +481,7 @@
                     "id": 9,
                     "name": "bytes32",
                     "nodeType": "ElementaryTypeName",
-                    "src": "471:7:0",
+                    "src": "470:7:0",
                     "typeDescriptions": {
                       "typeIdentifier": "t_bytes32",
                       "typeString": "bytes32"
@@ -490,27 +490,27 @@
                   "visibility": "internal"
                 }
               ],
-              "src": "470:14:0"
+              "src": "469:14:0"
             },
             "returnParameters": {
               "id": 12,
               "nodeType": "ParameterList",
               "parameters": [],
-              "src": "492:0:0"
+              "src": "491:0:0"
             },
             "scope": 19,
-            "src": "456:75:0",
+            "src": "455:75:0",
             "stateMutability": "nonpayable",
             "virtual": false,
             "visibility": "public"
           }
         ],
         "scope": 20,
-        "src": "156:378:0",
+        "src": "156:377:0",
         "usedErrors": []
       }
     ],
-    "src": "39:497:0"
+    "src": "39:496:0"
   },
   "compiler": {
     "name": "solc",
@@ -522,10 +522,22 @@
       "links": {},
       "address": "0x34552A71d0d1e9015331Baacf05f3B06Aba31Ad4",
       "transactionHash": "0x83ec5ab9f89e63b3a7cb0e7744f9eaf8526ebc215248ed9906f0a31aa2eda2ab"
+    },
+    "1665341730617": {
+      "events": {},
+      "links": {},
+      "address": "0xAD6CBB4364D1123cE3e933EBcCd2b7f8e193EAEC",
+      "transactionHash": "0xfcf957c53c7da1a83e0363a093b308522b7b97d008ee070bc4667905f5e8b47d"
+    },
+    "1665341939317": {
+      "events": {},
+      "links": {},
+      "address": "0x43954e28174a595Fb1E3adf23b08b5CCE156f3dA",
+      "transactionHash": "0xe537f097a24c7e9aa00ab4b760804aa424a004fd295632d3c1bc42a909218e5e"
     }
   },
   "schemaVersion": "3.4.10",
-  "updatedAt": "2022-10-07T18:09:38.062Z",
+  "updatedAt": "2022-10-09T18:59:23.935Z",
   "networkType": "ethereum",
   "devdoc": {
     "details": "Store 256-bit hash values as event log",
@@ -537,7 +549,7 @@
     "kind": "dev",
     "methods": {
       "store(bytes32)": {
-        "details": "Stores the given hash as latest hash value.",
+        "details": "Stores the given hash values as event log.",
         "params": {
           "hash": "value to store"
         }
