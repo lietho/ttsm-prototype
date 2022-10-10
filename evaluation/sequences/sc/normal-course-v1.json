@@ -1,0 +1,118 @@
+[
+  {
+    "stack": 1,
+    "event": "Order product",
+    "payload": "1000 car tires;2000 car seats;",
+    "next": {
+      "Manufacturer": "Calculate demand"
+    }
+  },
+  {
+    "stack": 2,
+    "event": "Place order",
+    "payload": "10 metrics tons of rubber;2 metric tons aluminum;3000 seat covers;",
+    "next": {
+      "Middleman": "Handle order"
+    }
+  },
+  {
+    "stack": 1,
+    "event": "Forward order",
+    "payload": "10 metrics tons of rubber;2 metric tons aluminum;3000 seat covers;",
+    "next": {
+      "Supplier": "Produce"
+    }
+  },
+  {
+    "stack": 2,
+    "event": "Complete production",
+    "next": {
+      "Supplier": "Prepare transport"
+    }
+  },
+  {
+    "stack": 2,
+    "event": "Notify middleman",
+    "payload": "Order has been completely produced",
+    "next": {
+      "Middleman": "Process transport"
+    }
+  },
+  {
+    "stack": 1,
+    "event": "Order transport",
+    "payload": "Need transport for 20 metrics tons",
+    "next": {
+      "Carrier": "Ask for details"
+    }
+  },
+  {
+    "stack": 1,
+    "event": "Request transport details",
+    "payload": "Order ID: 78f7cfaf-fc1d-4f18-9240-aa5986bbdb7c",
+    "next": {
+      "Supplier": "Process details"
+    }
+  },
+  {
+    "stack": 2,
+    "event": "Send transport details",
+    "payload": "JVBERi0xLjcNCiW1tbW1DQoxIDAgb2JqDQo8PC9UeXBlL0NhdGFsb2cvUGFnZXMgMiAwIFIvTGFuZyhkZS1BVCkgL1N0cnVjdFRyZWVSb290IDEwIDAgUi9NYXJrSW5mbzw8L01hcmtlZCB0cnVlPj4vTWV0YWRhdGEgMjAgMCBSL1ZpZXdlclByZWZlcmVuY2VzIDIxIDAgUj4+DQplbmRvYmoNCjIgMC=",
+    "next": {
+      "Carrier": "Ask for waybill"
+    }
+  },
+  {
+    "stack": 1,
+    "event": "Request waybill",
+    "payload": "Order ID: 78f7cfaf-fc1d-4f18-9240-aa5986bbdb7c",
+    "next": {
+      "Supplier": "Process waybill"
+    }
+  },
+  {
+    "stack": 2,
+    "event": "Send waybill",
+    "payload": "JVBERi0xLjcNCiW1tbW1DQoxIDAgb2JqDQo8PC9UeXBlL0NhdGFsb2cvUGFnZXMgMiAwIFIvTGFuZyhkZS1BVCkgL1N0cnVjdFRyZWVSb290IDEwIDAgUi9NYXJrSW5mbzw8L01hcmtlZCB0cnVlPj4vTWV0YWRhdGEgMjAgMCBSL1ZpZXdlclByZWZlcmVuY2VzIDIxIDAgUj4+DQplbmRvYmoNCjIgMC=",
+    "next": {
+      "Carrier": "Load trucks"
+    }
+  },
+  {
+    "stack": 1,
+    "event": "Deliver order",
+    "next": {
+      "Manufacturer": "Production start"
+    }
+  },
+  {
+    "stack": 2,
+    "event": "Report production start",
+    "payload": "JVBERi0xLjcNCiW1tbW1DQoxIDAgb2JqDQo8PC9UeXBlL0NhdGFsb2cvUGFnZXMgMiAwIFIvTGFuZyhkZS1BVCkgL1N0cnVjdFRyZWVSb290IDEwIDAgUi9NYXJrSW5mbzw8L01hcmtlZCB0cnVlPj4vTWV0YWRhdGEgMjAgMCBSL1ZpZXdlclByZWZlcmVuY2VzIDIxIDAgUj4+DQplbmRvYmoNCjIgMC=",
+    "next": {
+      "Buyer": "Waiting for deliver"
+    }
+  },
+  {
+    "stack": 1,
+    "event": "Start producing",
+    "payload": "The product is still required and the plans look good!",
+    "next": {
+      "Manufacturer": "Producing"
+    }
+  },
+  {
+    "stack": 2,
+    "event": "Complete production",
+    "next": {
+      "Manufacturer": "Production end"
+    }
+  },
+  {
+    "stack": 2,
+    "event": "Deliver product",
+    "next": {
+      "Buyer": "Receive delivery"
+    }
+  }
+]

@@ -10,8 +10,8 @@ export const environment = {
     evm: {
       peerUrls: (process.env.CONSISTENCY_EVM_PEER_URLS?.split(' ')) ?? ['http://localhost:3001'],
       provider: process.env.CONSISTENCY_EVM_PROVIDER ?? 'ws://localhost:7545',
-      clientAddress: process.env.CONSISTENCY_EVM_CLIENT_ADDRESS ?? '0x918811551145306c987f44f6e691ad4B526E25A9',
-      contractAddress: process.env.CONSISTENCY_EVM_CONTRACT_ADDRESS ?? '0x43954e28174a595Fb1E3adf23b08b5CCE156f3dA'
+      clientAddress: process.env.CONSISTENCY_EVM_CLIENT_ADDRESS ?? '0x17212776520A70a69a0752e47AED0bA9aE965514',
+      contractAddress: process.env.CONSISTENCY_EVM_CONTRACT_ADDRESS ?? '0xcd912f8f44D792d757B476bee28ed991fae4c647'
     }
   },
   persistence: {

@@ -66,7 +66,13 @@ export class PersistenceService implements OnModuleInit, OnModuleDestroy {
             "${eventTypes.workflowInstanceRejectedByParticipant.type}": (s, e) => { s.instances[e.data.id].participantsRejected = [...(s.instances[e.data.id].participantsRejected || []), e.data]; },
             "${eventTypes.workflowInstanceAccepted.type}": (s, e) => { if (s.instances[e.data.id].acceptedByParticipants !== false) s.instances[e.data.id].acceptedByParticipants = true; },
             "${eventTypes.workflowInstanceRejected.type}": (s, e) => { s.instances[e.data.id].acceptedByParticipants = false; },
-            "${eventTypes.advanceWorkflowInstance.type}": (s, e) => { s.instances[e.data.id].currentState = e.data.to; },
+            "${eventTypes.advanceWorkflowInstance.type}": (s, e) => {
+              s.instances[e.data.id].participantsAccepted = [];
+              s.instances[e.data.id].participantsRejected = [];
+              s.instances[e.data.id].currentState = e.data.to;
+              s.instances[e.data.id].commitmentReference = e.data.commitmentReference;
+              s.instances[e.data.id].acceptedByParticipants = undefined;
+            },
             "${eventTypes.receivedTransition.type}": (s, e) => {
               s.instances[e.data.id].participantsAccepted = [];
               s.instances[e.data.id].participantsRejected = [];
@@ -244,7 +250,14 @@ export class PersistenceService implements OnModuleInit, OnModuleDestroy {
         if (eventTypes.workflowInstanceAccepted.sameAs(eventType) && result.acceptedByParticipants !== false) result.acceptedByParticipants = true;
         if (eventTypes.workflowInstanceRejected.sameAs(eventType)) result.acceptedByParticipants = false;
 
-        if (eventTypes.advanceWorkflowInstance.sameAs(eventType) && result != null) result.currentState = (event.data as unknown as WorkflowInstanceTransition).to;
+        if (eventTypes.advanceWorkflowInstance.sameAs(eventType) && result != null) {
+          const eventData = event.data as unknown as WorkflowInstanceTransition;
+          result.participantsAccepted = [];
+          result.participantsRejected = [];
+          result.currentState = eventData.to;
+          result.commitmentReference = eventData.commitmentReference;
+          result.acceptedByParticipants = undefined;
+        }
         if (eventTypes.receivedTransition.sameAs(eventType) && result != null) {
           const eventData = event.data as unknown as WorkflowInstanceTransition;
           result.participantsAccepted = [];

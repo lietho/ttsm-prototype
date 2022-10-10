@@ -1,0 +1,73 @@
+[
+  {
+    "stack": 1,
+    "event": "Report problem",
+    "payload": "The administrator page does not longer load!",
+    "next": {
+      "Key Account Manager": "Receive issue"
+    }
+  },
+  {
+    "stack": 2,
+    "event": "Extract problem description",
+    "next": {
+      "Key Account Manager": "Issue processed"
+    }
+  },
+  {
+    "stack": 2,
+    "event": "Ask 1st level support",
+    "payload": "Ms. Anderson reports that the administrator page is no longer loading.",
+    "next": {
+      "1st Level Support Agent": "Receive issue"
+    }
+  },
+  {
+    "stack": 1,
+    "event": "Ask 2nd level support",
+    "payload": "Ms. Anderson reports that the administrator page is no longer loading.",
+    "next": {
+      "2nd Level Support Agent": "Receive issue"
+    }
+  },
+  {
+    "stack": 2,
+    "event": "Ask developer",
+    "payload": "Ms. Anderson reports that the administrator page in release v4.1.7 is no longer loading.",
+    "next": {
+      "Developer": "Receive issue"
+    }
+  },
+  {
+    "stack": 1,
+    "event": "Provide feedback for 2nd level support",
+    "payload": "This issue stems from the new Firefox browser version, it will be fixed in v4.1.8.",
+    "next": {
+      "2nd Level Support Agent": "Receive issue"
+    }
+  },
+  {
+    "stack": 2,
+    "event": "Provide feedback for 1st level support",
+    "payload": "Will be fixed in v4.1.8.",
+    "next": {
+      "1st Level Support Agent": "Receive issue"
+    }
+  },
+  {
+    "stack": 1,
+    "event": "Provide feedback for account manager",
+    "payload": "We will fix this issue in the next release.",
+    "next": {
+      "Key Account Manager": "Issue processed"
+    }
+  },
+  {
+    "stack": 2,
+    "event": "Explain solution",
+    "payload": "Your issue drew our attention to a far more severe issue. We are on to it and will fix it as soon as possible! Thank you!",
+    "next": {
+      "VIP Customer": "Receive solution"
+    }
+  }
+]

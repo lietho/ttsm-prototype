@@ -1,0 +1,84 @@
+[
+  {
+    "stack": 1,
+    "event": "Order goods",
+    "payload": "1000 car tires;2000 car seats;",
+    "next": {
+      "Manufacturer": "Process order"
+    }
+  },
+  {
+    "stack": 2,
+    "event": "Place order for supplies",
+    "payload": "10 metrics tons of rubber;2 metric tons aluminum;3000 seat covers;",
+    "next": {
+      "Middleman": {
+        "Establish special carrier contact": "Select special carrier",
+        "Establish supplier contact": "Select supplier"
+      }
+    }
+  },
+  {
+    "stack": 1,
+    "event": "Forward order for supplies",
+    "payload": "10 metrics tons of rubber;2 metric tons aluminum;3000 seat covers;",
+    "next": {
+      "Middleman": {
+        "Establish supplier contact": "Order forwarded",
+        "Establish special carrier contact": "Select special carrier"
+      }
+    }
+  },
+  {
+    "stack": 1,
+    "event": "Place order for transport",
+    "payload": "Need transport for at least 20 metrics tons",
+    "next": {
+      "Special Carrier": "Process order"
+    }
+  },
+  {
+    "stack": 2,
+    "event": "Request details",
+    "payload": "Order ID: 78f7cfaf-fc1d-4f18-9240-aa5986bbdb7c",
+    "next": {
+      "Supplier": "Process details"
+    }
+  },
+  {
+    "stack": 1,
+    "event": "Create waybill",
+    "next": {
+      "Supplier": "Details complete"
+    }
+  },
+  {
+    "stack": 1,
+    "event": "Provide details and waybill",
+    "payload": "JVBERi0xLjcNCiW1tbW1DQoxIDAgb2JqDQo8PC9UeXBlL0NhdGFsb2cvUGFnZXMgMiAwIFIvTGFuZyhkZS1BVCkgL1N0cnVjdFRyZWVSb290IDEwIDAgUi9NYXJrSW5mbzw8L01hcmtlZCB0cnVlPj4vTWV0YWRhdGEgMjAgMCBSL1ZpZXdlclByZWZlcmVuY2VzIDIxIDAgUj4+DQplbmRvYmoNCjIgMC=",
+    "next": {
+      "Special Carrier": "Process details"
+    }
+  },
+  {
+    "stack": 2,
+    "event": "Deliver supplies",
+    "next": {
+      "Manufacturer": "Receive supplies"
+    }
+  },
+  {
+    "stack": 1,
+    "event": "Start production",
+    "next": {
+      "Manufacturer": "Produce"
+    }
+  },
+  {
+    "stack": 1,
+    "event": "Deliver goods",
+    "next": {
+      "Bulk Buyer": "Receive goods"
+    }
+  }
+]

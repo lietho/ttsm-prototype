@@ -1,0 +1,115 @@
+{
+  "id": "Supply Chain",
+  "initial": "Bulk Buyer",
+  "states": {
+    "Bulk Buyer": {
+      "initial": "Waiting",
+      "states": {
+        "Waiting": {
+          "on": {
+            "Order goods": {
+              "target": "#Supply Chain.Manufacturer"
+            }
+          }
+        },
+        "Receive goods": {
+          "type": "final"
+        }
+      }
+    },
+    "Manufacturer": {
+      "initial": "Process order",
+      "states": {
+        "Process order": {
+          "on": {
+            "Place order for supplies": {
+              "target": "#Supply Chain.Middleman"
+            }
+          }
+        },
+        "Receive supplies": {
+          "on": {
+            "Start production": {
+              "target": "Produce"
+            }
+          }
+        },
+        "Produce": {
+          "on": {
+            "Deliver goods": {
+              "target": "#Supply Chain.Bulk Buyer.Receive goods"
+            }
+          }
+        }
+      }
+    },
+    "Middleman": {
+      "type": "parallel",
+      "states": {
+        "Establish supplier contact": {
+          "initial": "Select supplier",
+          "states": {
+            "Select supplier": {
+              "on": {
+                "Forward order for supplies": {
+                  "target": "Order forwarded"
+                }
+              }
+            },
+            "Order forwarded": {}
+          }
+        },
+        "Establish special carrier contact": {
+          "initial": "Select special carrier",
+          "states": {
+            "Select special carrier": {
+              "on": {
+                "Place order for transport": {
+                  "target": "#Supply Chain.Special Carrier"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "Special Carrier": {
+      "initial": "Process order",
+      "states": {
+        "Process order": {
+          "on": {
+            "Request details": {
+              "target": "#Supply Chain.Supplier"
+            }
+          }
+        },
+        "Process details": {
+          "on": {
+            "Deliver supplies": {
+              "target": "#Supply Chain.Manufacturer.Receive supplies"
+            }
+          }
+        }
+      }
+    },
+    "Supplier": {
+      "initial": "Process details",
+      "states": {
+        "Process details": {
+          "on": {
+            "Create waybill": {
+              "target": "Details complete"
+            }
+          }
+        },
+        "Details complete": {
+          "on": {
+            "Provide details and waybill": {
+              "target": "#Supply Chain.Special Carrier.Process details"
+            }
+          }
+        }
+      }
+    }
+  }
+}

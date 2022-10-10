@@ -1,0 +1,67 @@
+[
+  {
+    "stack": 1,
+    "event": "Maintenance due",
+    "next": {
+      "Building Administrator": {
+        "Preparation": {
+          "Prepare maintenance": "Setup facility site",
+          "Request maintenance": "Send request"
+        }
+      }
+    }
+  },
+  {
+    "stack": 1,
+    "event": "Request maintenance",
+    "payload": "Maintenance is required on facility 7 in building 1.",
+    "next": {
+      "Maintenance Contractor": "Perform maintenance"
+    }
+  },
+  {
+    "stack": 2,
+    "event": "Order spare parts",
+    "next": {
+      "Maintenance Contractor": "Waiting for delivery"
+    }
+  },
+  {
+    "stack": 2,
+    "event": "Receive spare parts",
+    "next": {
+      "Maintenance Contractor": "Perform maintenance"
+    }
+  },
+  {
+    "stack": 2,
+    "event": "Complete maintenance",
+    "next": {
+      "Maintenance Contractor": "Maintenance complete"
+    }
+  },
+  {
+    "stack": 2,
+    "event": "Notify building administrator",
+    "payload": "Maintenance on facility 7 in building 1 is complete and ready for inspection.",
+    "next": {
+      "Building Administrator": "Inspect maintenance"
+    }
+  },
+  {
+    "stack": 1,
+    "event": "Maintenance accepted",
+    "payload": "Looks fine to me!",
+    "next": {
+      "Maintenance Contractor": "Receive acceptance"
+    }
+  },
+  {
+    "stack": 2,
+    "event": "Send invoice and report",
+    "payload": "JVBERi0xLjcNCiW1tbW1DQoxIDAgb2JqDQo8PC9UeXBlL0NhdGFsb2cvUGFnZXMgMiAwIFIvTGFuZyhkZS1BVCkgL1N0cnVjdFRyZWVSb290IDEwIDAgUi9NYXJrSW5mbzw8L01hcmtlZCB0cnVlPj4vTWV0YWRhdGEgMjAgMCBSL1ZpZXdlclByZWZlcmVuY2VzIDIxIDAgUj4+DQplbmRvYmoNCjIgMC=",
+    "next": {
+      "Building Administrator": "Receive invoice and report"
+    }
+  }
+]

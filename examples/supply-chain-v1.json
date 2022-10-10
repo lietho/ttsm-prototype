@@ -1,0 +1,139 @@
+{
+  "id": "Supply Chain",
+  "initial": "Buyer",
+  "states": {
+    "Buyer": {
+      "initial": "Waiting",
+      "states": {
+        "Waiting": {
+          "on": {
+            "Order product": {
+              "target": "#Supply Chain.Manufacturer"
+            }
+          }
+        },
+        "Waiting for deliver": {
+          "on": {
+            "Start producing": {
+              "target": "#Supply Chain.Manufacturer.Producing"
+            }
+          }
+        },
+        "Receive delivery": {
+          "type": "final"
+        }
+      }
+    },
+    "Manufacturer": {
+      "initial": "Calculate demand",
+      "states": {
+        "Calculate demand": {
+          "on": {
+            "Place order": {
+              "target": "#Supply Chain.Middleman"
+            }
+          }
+        },
+        "Production start": {
+          "on": {
+            "Report production start": {
+              "target": "#Supply Chain.Buyer.Waiting for deliver"
+            }
+          }
+        },
+        "Producing": {
+          "on": {
+            "Complete production": {
+              "target": "Production end"
+            }
+          }
+        },
+        "Production end": {
+          "on": {
+            "Deliver product": {
+              "target": "#Supply Chain.Buyer.Receive delivery"
+            }
+          }
+        }
+      }
+    },
+    "Middleman": {
+      "initial": "Handle order",
+      "states": {
+        "Handle order": {
+          "on": {
+            "Forward order": {
+              "target": "#Supply Chain.Supplier"
+            }
+          }
+        },
+        "Process transport": {
+          "on": {
+            "Order transport": {
+              "target": "#Supply Chain.Carrier"
+            }
+          }
+        }
+      }
+    },
+    "Supplier": {
+      "initial": "Produce",
+      "states": {
+        "Produce": {
+          "on": {
+            "Complete production": {
+              "target": "Prepare transport"
+            }
+          }
+        },
+        "Prepare transport": {
+          "on": {
+            "Notify middleman": {
+              "target": "#Supply Chain.Middleman.Process transport"
+            }
+          }
+        },
+        "Process details": {
+          "on": {
+            "Send transport details": {
+              "target": "#Supply Chain.Carrier.Ask for waybill"
+            }
+          }
+        },
+        "Process waybill": {
+          "on": {
+            "Send waybill": {
+              "target": "#Supply Chain.Carrier.Load trucks"
+            }
+          }
+        }
+      }
+    },
+    "Carrier": {
+      "initial": "Ask for details",
+      "states": {
+        "Ask for details": {
+          "on": {
+            "Request transport details": {
+              "target": "#Supply Chain.Supplier.Process details"
+            }
+          }
+        },
+        "Ask for waybill": {
+          "on": {
+            "Request waybill": {
+              "target": "#Supply Chain.Supplier.Process waybill"
+            }
+          }
+        },
+        "Load trucks": {
+          "on": {
+            "Deliver order": {
+              "target": "#Supply Chain.Manufacturer.Production start"
+            }
+          }
+        }
+      }
+    }
+  }
+}

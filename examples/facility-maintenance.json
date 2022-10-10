@@ -29,8 +29,12 @@
             }
           }
         },
-        "Send invoice and report": {
-          "type": "final"
+        "Receive acceptance": {
+          "on": {
+            "Send invoice and report": {
+              "target": "#Facility Maintenance.Building Administrator.Receive invoice and report"
+            }
+          }
         }
       }
     },
@@ -69,12 +73,15 @@
         "Inspect maintenance": {
           "on": {
             "Maintenance accepted": {
-              "target": "#Facility Maintenance.Maintenance Contractor.Send invoice and report"
+              "target": "#Facility Maintenance.Maintenance Contractor.Receive acceptance"
             },
             "Maintenance rejected": {
               "target": "#Facility Maintenance.Maintenance Contractor.Perform maintenance"
             }
           }
+        },
+        "Receive invoice and report": {
+          "type": "final"
         }
       }
     }

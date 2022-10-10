@@ -1,0 +1,85 @@
+{
+  "id": "Incident Management",
+  "initial": "VIP Customer",
+  "states": {
+    "VIP Customer": {
+      "initial": "Problem detected",
+      "states": {
+        "Problem detected": {
+          "on": {
+            "Report problem": {
+              "target": "#Incident Management.Key Account Manager"
+            }
+          }
+        },
+        "Receive solution": {
+          "type": "final"
+        }
+      }
+    },
+    "Key Account Manager": {
+      "initial": "Receive issue",
+      "states": {
+        "Receive issue": {
+          "on": {
+            "Extract problem description": {
+              "target": "Issue processed"
+            }
+          }
+        },
+        "Issue processed": {
+          "on": {
+            "Ask 1st level support": {
+              "target": "#Incident Management.1st Level Support Agent"
+            },
+            "Explain solution": {
+              "target": "#Incident Management.VIP Customer.Receive solution"
+            }
+          }
+        }
+      }
+    },
+    "1st Level Support Agent": {
+      "initial": "Receive issue",
+      "states": {
+        "Receive issue": {
+          "on": {
+            "Provide feedback for account manager": {
+              "target": "#Incident Management.Key Account Manager.Issue processed"
+            },
+            "Ask 2nd level support": {
+              "target": "#Incident Management.2nd Level Support Agent"
+            }
+          }
+        }
+      }
+    },
+    "2nd Level Support Agent": {
+      "initial": "Receive issue",
+      "states": {
+        "Receive issue": {
+          "on": {
+            "Provide feedback for 1st level support": {
+              "target": "#Incident Management.1st Level Support Agent.Receive issue"
+            },
+            "Ask developer": {
+              "target": "#Incident Management.Developer"
+            }
+          }
+        }
+      }
+    },
+    "Developer": {
+      "initial": "Receive issue",
+      "states": {
+        "Receive issue": {
+          "on": {
+            "Provide feedback for 2nd level support": {
+              "target": "#Incident Management.2nd Level Support Agent.Receive issue"
+            }
+          }
+        }
+      }
+    }
+  }
+}
