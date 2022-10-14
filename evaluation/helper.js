@@ -26,6 +26,35 @@ const computeLatency = (data) => data.participantsAccepted
     .reduce((previousValue, currentValue) => Math.max(previousValue, currentValue.commitmentReference.finalityDuration), 0)
   + data.commitmentReference.finalityDuration;
 
+
+/**
+ * Shuffles array in place.
+ * @see {@link https://stackoverflow.com/a/6274381/11454797}
+ */
+const shuffle = (arr) => {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+};
+
+function generateRandomTraces(sequence = [], traces = 50) {
+  const sequenceDeepClone = _.cloneDeep(sequence);
+  sequenceDeepClone.forEach((curr) => curr.stack = 1);
+
+  const result = [];
+  while (result.length < traces) {
+    const shuffledCopy = shuffle([...sequenceDeepClone]);
+    const shuffledCopyAsString = JSON.stringify(shuffledCopy);
+    const alreadyIncludes = result.findIndex((curr) => JSON.stringify(curr) === shuffledCopyAsString) >= 0;
+    if (!alreadyIncludes) {
+      result.push(shuffledCopy);
+    }
+  }
+  return result;
+}
+
 async function createWorkflow(stackNr, workflow, waitForFinality = true) {
   const startTime = performance.now();
   let response = await axios.post(getStackHostAddress(stackNr) + `workflows`, {
@@ -124,6 +153,8 @@ module.exports = {
   sleepForRandomBlockTime,
   computeGasUsed,
   computeLatency,
+  shuffle,
+  generateRandomTraces,
   createWorkflow,
   getWorkflow,
   launchWorkflowInstance,

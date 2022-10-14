@@ -1,4 +1,7 @@
+const _ = require("lodash");
+const xstate = require("xstate");
 const helper = require("./helper");
+const { interpret } = require("xstate");
 const workflows = {
   tl: require("../examples/traffic-light.json"),
   fm: require("../examples/facility-maintenance.json"),
@@ -18,20 +21,51 @@ const sequences = {
 };
 
 async function main() {
+
   // Facility Management Scenario
+  evaluateRandomTraces(workflows.fm, sequences.fm.normalCourse, 500, "fm");
   await evaluateWorkflowDefinitionCreation(workflows.fm, 50, "fm");
   await evaluateWorkflowInstantiation(workflows.fm, 50, "fm");
   await evaluateWorkflowExecution(workflows.fm, sequences.fm.normalCourse, 10, "fm");
 
   // Supply Chain Scenario
+  evaluateRandomTraces(workflows.sc, sequences.sc.normalCourse, 500, "sc");
   await evaluateWorkflowDefinitionCreation(workflows.sc, 50, "sc", 2.5);
   await evaluateWorkflowInstantiation(workflows.sc, 50, "sc", 2.5);
   await evaluateWorkflowExecution(workflows.sc, sequences.sc.normalCourse, 10, "sc", 2.5);
 
   // Incident Management Scenario
+  evaluateRandomTraces(workflows.im, sequences.im.normalCourse, 500, "im");
   await evaluateWorkflowDefinitionCreation(workflows.im, 50, "im", 2.5);
   await evaluateWorkflowInstantiation(workflows.im, 50, "im", 2.5);
   await evaluateWorkflowExecution(workflows.im, sequences.im.normalCourse, 10, "im", 2.5);
+}
+
+function evaluateRandomTraces(workflow, sequence, traces = 50, outDir) {
+  console.log(`Evaluating random traces:`);
+  console.log(`  Generating ${traces} random traces...`);
+  const randomTraces = helper.generateRandomTraces(sequence, traces);
+  const machine = xstate.createMachine(workflow);
+
+  const output = [];
+  for (let i = 0; i < traces; i++) {
+    console.log(`  Checking trace ${i + 1} of ${traces} (${Math.round(((i + 1) / traces) * 100)}%)...`);
+    const service = interpret(machine).start();
+
+    const trace = randomTraces[i];
+    let outputLine = `${i + 1};`;
+    for (let j = 0; j < trace.length; j++) {
+      const curr = trace[j];
+      const newState = service.send(curr.event, curr.payload);
+      outputLine += (JSON.stringify(newState.value) + ";");
+      if (j === (trace.length - 1) && _.isEqual(newState.value, trace[trace.length - 1].next)) {
+        outputLine += "COMPLETE;";
+      }
+    }
+    service.stop();
+    output.push(outputLine);
+  }
+  helper.writeOutputFile(outDir, `traces-n${traces}.csv`, output.join("\n"));
 }
 
 async function evaluateWorkflowDefinitionCreation(workflow, iterations = 5, outDir, factor = 1) {
