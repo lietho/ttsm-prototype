@@ -19,21 +19,19 @@ const sequences = {
 
 async function main() {
   // Facility Management Scenario
-  // await evaluateWorkflowDefinitionCreation(workflows.fm, 50, "fm");
-  // await evaluateWorkflowInstantiation(workflows.fm, 50, "fm");
-  // await evaluateWorkflowExecution(workflows.fm, sequences.fm.normalCourse, 10, "fm");
+  await evaluateWorkflowDefinitionCreation(workflows.fm, 50, "fm");
+  await evaluateWorkflowInstantiation(workflows.fm, 50, "fm");
+  await evaluateWorkflowExecution(workflows.fm, sequences.fm.normalCourse, 10, "fm");
 
   // Supply Chain Scenario
-  // await evaluateWorkflowDefinitionCreation(workflows.sc, 50, "sc", 2.5);
-  // await evaluateWorkflowInstantiation(workflows.sc, 50, "sc", 2.5);
-  // await evaluateWorkflowExecution(workflows.sc, sequences.sc.normalCourse, 10, "sc", 2.5);
+  await evaluateWorkflowDefinitionCreation(workflows.sc, 50, "sc", 2.5);
+  await evaluateWorkflowInstantiation(workflows.sc, 50, "sc", 2.5);
+  await evaluateWorkflowExecution(workflows.sc, sequences.sc.normalCourse, 10, "sc", 2.5);
 
   // Incident Management Scenario
-  // await evaluateWorkflowDefinitionCreation(workflows.im, 50, "im", 2.5);
-  // await evaluateWorkflowInstantiation(workflows.im, 24, "im", 2.5);
-  await evaluateWorkflowInstantiation(workflows.im, 26, "im", 2.5);
-  await evaluateWorkflowExecution(workflows.im, sequences.im.normalCourse, 4, "im", 2.5);
-  await evaluateWorkflowExecution(workflows.im, sequences.im.normalCourse, 6, "im", 2.5);
+  await evaluateWorkflowDefinitionCreation(workflows.im, 50, "im", 2.5);
+  await evaluateWorkflowInstantiation(workflows.im, 50, "im", 2.5);
+  await evaluateWorkflowExecution(workflows.im, sequences.im.normalCourse, 10, "im", 2.5);
 }
 
 async function evaluateWorkflowDefinitionCreation(workflow, iterations = 5, outDir, factor = 1) {
@@ -134,7 +132,7 @@ async function evaluateWorkflowExecution(workflow, sequence, iterations = 5, out
       await helper.sleep(10000);
       continue;
     }
-    const instanceId = result.data.id;
+    const instanceId = result.finalityResult.data.id;
 
     let sequenceGasUsed = 0;
     let sequenceFinalityDuration = 0;
