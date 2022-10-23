@@ -51,6 +51,13 @@ export class ZeebeService implements OnModuleInit, OnModuleDestroy {
 
   /** @inheritDoc */
   async onModuleInit() {
+    if (environment.integrations.zeebe == null ||
+      environment.integrations.zeebe.gatewayAddress == null ||
+      environment.integrations.zeebe.gatewayAddress.length <= 0) {
+      this.logger.log(`Skipping Zeebe integration due to missing authorization credentials`);
+      return;
+    }
+
     this.logger.log(`Establishing connection to Zeebe on "${environment.integrations.zeebe.gatewayAddress}" using authorization server "${environment.integrations.zeebe.authorizationServerUrl}"`);
     const zeebeClientLogger = new Logger('ZeebeClient');
     this.zeebeClient = new ZBClient(environment.integrations.zeebe.gatewayAddress, {
