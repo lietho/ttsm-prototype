@@ -1,12 +1,13 @@
 import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { MachineConfig } from 'xstate';
 import { ZBClient } from 'zeebe-node';
-import { WorkflowInstanceProposal, WorkflowInstanceTransition, WorkflowProposal, WorkflowService } from '../../workflow';
+import { WorkflowInstanceProposal, WorkflowProposal, WorkflowService } from '../../workflow';
 import { zeebeCreatedProcessInstance, zeebeDeployedProcess, ZeebeProcessMetadata } from './zeebe.events';
 import { PersistenceService } from '../../persistence';
 import * as persistenceEvents from '../../persistence/persistence.events';
 import { randomUUIDv4 } from '../../core/utils';
 import { environment } from '../../environment';
+import { ZBWorkerTaskHandler } from 'zeebe-node/dist/lib/interfaces-1.0';
 
 @Injectable()
 export class ZeebeService implements OnModuleInit, OnModuleDestroy {
@@ -90,7 +91,6 @@ export class ZeebeService implements OnModuleInit, OnModuleDestroy {
 
       if (persistenceEvents.receivedWorkflow.sameAs(eventType)) await this.createWorkflow(eventData as WorkflowProposal);
       if (persistenceEvents.receivedWorkflowInstance.sameAs(eventType)) await this.launchWorkflowInstance(eventData as WorkflowInstanceProposal);
-      if (persistenceEvents.receivedTransition.sameAs(eventType)) await this.advanceWorkflowInstance(eventData as WorkflowInstanceTransition);
     });
   }
 
@@ -140,32 +140,48 @@ export class ZeebeService implements OnModuleInit, OnModuleDestroy {
       instance: response
     }));
 
+    await this.linkProcessInstance(definition);
+  }
+
+  /**
+   * Links an existing Zeebe workflow to a TTSM workflow.
+   * @param definition Workflow instance definition.
+   */
+  async linkProcessInstance(definition: WorkflowInstanceProposal) {
+    const workflow = (await this.persistence
+      .getProjectionResult<Record<string, { definition: WorkflowProposal, processes: ZeebeProcessMetadata[] }>>(this.zeebeProjectionName))
+      [definition.workflowId];
+
+    const worker: ZBWorkerTaskHandler = (job) => {
+      this.logger.log(`Task handler invoked for task type "${job.type}" with payload: ${JSON.stringify(job.variables)}`);
+
+      try {
+        this.workflow.advanceWorkflowInstance(
+          workflow.definition.consistencyId,
+          definition.consistencyId,
+          {
+            event: job.type,
+            payload: job.variables
+          }
+        );
+      } catch (error) {
+        return job.fail(error.message);
+      }
+
+      return job.complete();
+    };
+
     this.logger.log(`Setup job workers on Zeebe`);
     const states = (workflow.definition.workflowModel as MachineConfig<any, any, any>).states;
-    for (const [key, value] of Object.entries(states)) {
+    for (const [key] of Object.entries(states)) {
       this.logger.log(`  - Subscribe to task type: "${key}"`);
       this.zeebeClient.createWorker({
         taskType: key,
-        taskHandler: (job) => {
-          this.logger.log(`Task handler invoked for task type "${job.type}" with payload: ${JSON.stringify(job.variables)}`);
-          this.workflow.advanceWorkflowInstance(
-            workflow.definition.consistencyId,
-            definition.consistencyId,
-            {
-              event: key,
-              payload: job.variables
-            }
-          );
-          return job.complete();
-        },
+        taskHandler: worker,
         onReady: () => this.logger.log(`Task handler "${key}" ready!`),
         onConnectionError: () => this.logger.log(`Task handler "${key}" could not connect to Zeebe!`),
         onConnectionErrorHandler: (error) => this.logger.log(`Task handler "${key}" errored: ${JSON.stringify(error)}`)
       });
     }
-  }
-
-  async advanceWorkflowInstance(transition: WorkflowInstanceTransition) {
-    this.logger.log(`Publish workflow transition message on Zeebe`);
   }
 }
