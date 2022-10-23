@@ -3,7 +3,7 @@ const xstate = require("xstate");
 const helper = require("./helper");
 const { interpret } = require("xstate");
 const workflows = {
-  tl: require("../examples/traffic-light.json"),
+  tl: require("../examples/traffic-light/traffic-light.json"),
   fm: require("../examples/facility-maintenance.json"),
   sc: require("../examples/supply-chain-v2.json"),
   im: require("../examples/incident-management.json")
@@ -23,22 +23,22 @@ const sequences = {
 async function main() {
 
   // Facility Management Scenario
-  evaluateRandomTraces(workflows.fm, sequences.fm.normalCourse, 500, "fm");
-  await evaluateWorkflowDefinitionCreation(workflows.fm, 50, "fm");
-  await evaluateWorkflowInstantiation(workflows.fm, 50, "fm");
-  await evaluateWorkflowExecution(workflows.fm, sequences.fm.normalCourse, 10, "fm");
+  // evaluateRandomTraces(workflows.fm, sequences.fm.normalCourse, 500, "fm");
+  // await evaluateWorkflowDefinitionCreation(workflows.fm, 50, "fm");
+  // await evaluateWorkflowInstantiation(workflows.fm, 50, "fm");
+  // await evaluateWorkflowExecution(workflows.fm, sequences.fm.normalCourse, 10, "fm");
 
   // Supply Chain Scenario
-  evaluateRandomTraces(workflows.sc, sequences.sc.normalCourse, 500, "sc");
-  await evaluateWorkflowDefinitionCreation(workflows.sc, 50, "sc", 2.5);
-  await evaluateWorkflowInstantiation(workflows.sc, 50, "sc", 2.5);
-  await evaluateWorkflowExecution(workflows.sc, sequences.sc.normalCourse, 10, "sc", 2.5);
+  // evaluateRandomTraces(workflows.sc, sequences.sc.normalCourse, 500, "sc");
+  // await evaluateWorkflowDefinitionCreation(workflows.sc, 50, "sc", 2.5);
+  // await evaluateWorkflowInstantiation(workflows.sc, 50, "sc", 2.5);
+  // await evaluateWorkflowExecution(workflows.sc, sequences.sc.normalCourse, 10, "sc", 2.5);
 
   // Incident Management Scenario
-  evaluateRandomTraces(workflows.im, sequences.im.normalCourse, 500, "im");
-  await evaluateWorkflowDefinitionCreation(workflows.im, 50, "im", 2.5);
-  await evaluateWorkflowInstantiation(workflows.im, 50, "im", 2.5);
-  await evaluateWorkflowExecution(workflows.im, sequences.im.normalCourse, 10, "im", 2.5);
+  // evaluateRandomTraces(workflows.im, sequences.im.normalCourse, 500, "im");
+  // await evaluateWorkflowDefinitionCreation(workflows.im, 50, "im", 2.5);
+  // await evaluateWorkflowInstantiation(workflows.im, 50, "im", 2.5);
+  // await evaluateWorkflowExecution(workflows.im, sequences.im.normalCourse, 10, "im", 2.5);
 }
 
 function evaluateRandomTraces(workflow, sequence, traces = 50, outDir) {

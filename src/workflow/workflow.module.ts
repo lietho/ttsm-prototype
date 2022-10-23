@@ -7,7 +7,8 @@ import { PersistenceModule } from '../persistence';
 @Module({
   controllers: [WorkflowController],
   providers: [WorkflowService],
-  imports: [OptimizerModule, PersistenceModule]
+  imports: [OptimizerModule, PersistenceModule],
+  exports: [WorkflowService]
 })
 export class WorkflowModule {
 }

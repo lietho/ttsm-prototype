@@ -1,0 +1,16 @@
+{
+  "id": "Pedestrian Traffic Light",
+  "initial": "green",
+  "states": {
+    "green": {
+      "on": {
+        "TIMER": "red"
+      }
+    },
+    "red": {
+      "on": {
+        "TIMER": "green"
+      }
+    }
+  }
+}

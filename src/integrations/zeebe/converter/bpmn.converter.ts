@@ -1,0 +1,66 @@
+import { MachineConfig } from 'xstate';
+
+/**
+ * Converts a given state chart to a zeebe configuration. For this function to fully support statechart conversion, further
+ * research has to be conducted. Thus, it always returns a static facility maintenance use case for now.
+ * @param workflow
+ */
+export const convertStateChartToZeebeConfig = (workflow: MachineConfig<any, any, any>): string => `
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:modeler="http://camunda.org/schema/modeler/1.0" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Web Modeler" exporterVersion="e6148d0" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.1.0" camunda:diagramRelationId="76986570-4c24-4070-b9d6-a46073900d35">
+  <bpmn:process id="Process_dbb87d12-9e8c-4ea3-8d06-65cc5008acc4" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_1">
+      <bpmn:outgoing>Flow_08y906c</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:sequenceFlow id="Flow_08y906c" sourceRef="StartEvent_1" targetRef="Activity_16ms4oe" />
+    <bpmn:sequenceFlow id="Flow_1fcou6n" sourceRef="Activity_16ms4oe" targetRef="Activity_14mnsif" />
+    <bpmn:endEvent id="Event_0mht0pd">
+      <bpmn:incoming>Flow_160dfn1</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_160dfn1" sourceRef="Activity_14mnsif" targetRef="Event_0mht0pd" />
+    <bpmn:serviceTask id="Activity_16ms4oe" name="Red">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="red" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_08y906c</bpmn:incoming>
+      <bpmn:outgoing>Flow_1fcou6n</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="Activity_14mnsif" name="Green">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="green" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_1fcou6n</bpmn:incoming>
+      <bpmn:outgoing>Flow_160dfn1</bpmn:outgoing>
+    </bpmn:serviceTask>
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Process_dbb87d12-9e8c-4ea3-8d06-65cc5008acc4">
+      <bpmndi:BPMNShape id="_BPMNShape_StartEvent_2" bpmnElement="StartEvent_1">
+        <dc:Bounds x="172" y="82" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_0mht0pd_di" bpmnElement="Event_0mht0pd">
+        <dc:Bounds x="582" y="82" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_0wpsdab_di" bpmnElement="Activity_16ms4oe">
+        <dc:Bounds x="260" y="60" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_13wzzzw_di" bpmnElement="Activity_14mnsif">
+        <dc:Bounds x="420" y="60" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_08y906c_di" bpmnElement="Flow_08y906c">
+        <di:waypoint x="208" y="100" />
+        <di:waypoint x="260" y="100" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1fcou6n_di" bpmnElement="Flow_1fcou6n">
+        <di:waypoint x="360" y="100" />
+        <di:waypoint x="420" y="100" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_160dfn1_di" bpmnElement="Flow_160dfn1">
+        <di:waypoint x="520" y="100" />
+        <di:waypoint x="582" y="100" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>
+`;

@@ -5,6 +5,7 @@ import { WorkflowModule } from './workflow';
 import { ConsistencyModule } from './consistency';
 import { PersistenceModule } from './persistence';
 import { RulesModule } from './rules';
+import { IntegrationsModule } from './integrations/integrations.module';
 
 @Module({
   imports: [
@@ -12,7 +13,8 @@ import { RulesModule } from './rules';
     WorkflowModule,
     ConsistencyModule,
     PersistenceModule,
-    RulesModule
+    RulesModule,
+    IntegrationsModule
   ],
   controllers: [AppController]
 })

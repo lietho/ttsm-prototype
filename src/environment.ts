@@ -14,6 +14,15 @@ export const environment = {
       contractAddress: process.env.CONSISTENCY_EVM_CONTRACT_ADDRESS ?? '0xd11E5f19B7f00Af7706af7b41B794Fd58c0e5C6B'
     }
   },
+  integrations: {
+    zeebe: {
+      gatewayAddress: process.env.INTEGRATIONS_ZEEBE_ADDRESS ?? '',
+      authorizationServerUrl: process.env.INTEGRATIONS_ZEEBE_AUTHORIZATION_SERVER_URL ?? 'https://login.cloud.camunda.io/oauth/token',
+      audience: process.env.INTEGRATIONS_ZEEBE_AUDIENCE ?? '',
+      clientId: process.env.INTEGRATIONS_ZEEBE_CLIENT_ID ?? '',
+      clientSecret: process.env.INTEGRATIONS_ZEEBE_CLIENT_SECRET ?? ''
+    }
+  },
   persistence: {
     serviceUrl: process.env.PERSISTENCE_SERVICE_URL ?? 'esdb://localhost:2113?tls=false'
   }

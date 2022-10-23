@@ -1,5 +1,14 @@
 import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
-import { AllStreamResolvedEvent, jsonEvent, MetadataType, StreamSubscription } from '@eventstore/db-client';
+import {
+  AllStreamResolvedEvent,
+  CreateProjectionOptions,
+  DeleteProjectionOptions,
+  DisableProjectionOptions,
+  GetProjectionResultOptions,
+  jsonEvent,
+  MetadataType,
+  StreamSubscription
+} from '@eventstore/db-client';
 import {
   Workflow,
   WorkflowInstance,
@@ -181,6 +190,15 @@ export class PersistenceService implements OnModuleInit, OnModuleDestroy {
   }
 
   /**
+   * Dispatches an arbitrary event to the stream with the given name.
+   * @param streamName Stream name.
+   * @param event Event to be dispatched.
+   */
+  async dispatchEvent<T>(streamName: string, event: PersistenceEvent<T>) {
+    return await this.appendToStream(streamName, event);
+  }
+
+  /**
    * Launches a new instances of a certain workflow.
    * @param proposal
    */
@@ -352,6 +370,16 @@ export class PersistenceService implements OnModuleInit, OnModuleDestroy {
   }
 
   /**
+   * Returns the result of the projection with the given name. Check if a projection with this name already exists before calling this function.
+   * @param projectionName Projection name.
+   * @param options Additional options.
+   * @see existsProjection
+   */
+  async getProjectionResult<T = unknown>(projectionName: string, options?: GetProjectionResultOptions) {
+    return await eventStore.getProjectionResult<T>(projectionName, options) ?? {};
+  }
+
+  /**
    * Returns the projected aggregate of all workflows.
    * @private
    */
@@ -427,6 +455,37 @@ export class PersistenceService implements OnModuleInit, OnModuleDestroy {
       }
     }
     return false;
+  }
+
+  /**
+   * Creates the given projection. Check if a projection with this name already exists before calling this function.
+   * @param projectionName Name of the projection.
+   * @param query Projection query.
+   * @param options Additional options.
+   * @see existsProjection
+   */
+  async createProjection(projectionName: string, query: string, options?: CreateProjectionOptions) {
+    return await eventStore.createProjection(projectionName, query, options);
+  }
+
+  /**
+   * Disables the projection with the given name. Check if a projection with this name already exists before calling this function.
+   * @param projectionName Name of the projection to be disabled.
+   * @param options Additional options.
+   * @see existsProjection
+   */
+  async disableProjection(projectionName: string, options?: DisableProjectionOptions) {
+    return await eventStore.disableProjection(projectionName, options);
+  }
+
+  /**
+   * Deletes the projection with the given name. Check if a projection with this name already exists before calling this function.
+   * @param projectionName Name of the projection to be deleted.
+   * @param options Additional options.
+   * @see existsProjection
+   */
+  async deleteProjection(projectionName: string, options?: DeleteProjectionOptions) {
+    return await eventStore.deleteProjection(projectionName, options);
   }
 
   /**

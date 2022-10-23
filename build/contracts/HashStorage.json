@@ -558,10 +558,16 @@
       "links": {},
       "address": "0xd11E5f19B7f00Af7706af7b41B794Fd58c0e5C6B",
       "transactionHash": "0xd55054800935d8d9bfb1268f75a1d84a22d768d321c1ee401e67209993e70f74"
+    },
+    "1665947205538": {
+      "events": {},
+      "links": {},
+      "address": "0x3Cb0896309b6924D48ABE7411056214e91b37AAe",
+      "transactionHash": "0xd11f92238f9c8a00e9b68221ea6b4a3ea2a9ca87907f3b418e9e4d997deb3a7e"
     }
   },
   "schemaVersion": "3.4.10",
-  "updatedAt": "2022-10-14T19:47:59.429Z",
+  "updatedAt": "2022-10-16T19:06:58.667Z",
   "networkType": "ethereum",
   "devdoc": {
     "details": "Store 256-bit hash values as event log",

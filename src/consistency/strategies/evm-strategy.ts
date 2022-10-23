@@ -44,6 +44,9 @@ export class EvmStrategy implements ConsistencyStrategy, OnModuleInit {
 
   /** @inheritDoc */
   async onModuleInit() {
+    if (environment.consistency.strategy !== 'evm') {
+      return;
+    }
     this.logger.log(`Establishing connection to EVM on "${environment.consistency.evm.provider}" using client address "${environment.consistency.evm.clientAddress}"`);
     this.logger.log(`Current EVM block number: ${await this.web3.eth.getBlockNumber()}`);
     this.contract = new this.web3.eth.Contract(

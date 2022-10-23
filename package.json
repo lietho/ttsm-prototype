@@ -36,8 +36,9 @@
     "rimraf": "^3.0.2",
     "rxjs": "^7.5.6",
     "uuid": "^8.3.2",
+    "web3": "^1.8.0",
     "xstate": "^4.32.1",
-    "web3": "^1.8.0"
+    "zeebe-node": "^8.1.2"
   },
   "devDependencies": {
     "@nestjs/cli": "^8.2.8",
@@ -49,18 +50,18 @@
     "@types/supertest": "^2.0.10",
     "@typescript-eslint/eslint-plugin": "^4.15.2",
     "@typescript-eslint/parser": "^4.15.2",
-    "lodash": "4.17.21",
     "axios": "0.27.2",
     "eslint": "^7.20.0",
     "jest": "^26.6.3",
+    "lodash": "4.17.21",
     "prettier": "^2.2.1",
     "supertest": "^6.1.3",
+    "truffle": "^5.2.6",
     "ts-jest": "^26.5.2",
     "ts-loader": "^8.0.17",
     "ts-node": "^9.1.1",
     "tsconfig-paths": "^3.9.0",
-    "typescript": "^4.1.5",
-    "truffle": "^5.2.6"
+    "typescript": "^4.1.5"
   },
   "jest": {
     "moduleFileExtensions": [
