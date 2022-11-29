@@ -1,4 +1,5 @@
 ## Time-travelling State Machine Prototype for verifiable Business Processes
+[![DOI](https://zenodo.org/badge/521292268.svg)](https://zenodo.org/badge/latestdoi/521292268)
 
 A prototypical implementation of a time-travelling state machine for business process and workflow management. This prototype shows the viability of time-travel verification of business process and
 workflow activities that are backed by the immutability and traceability of a blockchain.
