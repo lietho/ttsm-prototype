@@ -169,18 +169,29 @@
 ### Advance Workflow Instance
 ![AdvanceWorkflowInstanceEventFlow_Old.png](AdvanceWorkflowInstanceEventFlow_Old.png)
 
-## Data Flow Refactored
+## Data Flow Refactored (v1)
+Version 1:
+* without local participants / peers
+* without external events
+* without Zeebe integration
+
 ### Create Workflow
 ![WorkflowCreationEventFlow_Refactored.png](WorkflowCreationEventFlow_Refactored.png)
 
 ### Launch Workflow Instance
-tbd
+![LaunchWorkflowInstanceEventFlow_Refactored.png](LaunchWorkflowInstanceEventFlow_Refactored.png)
 
 ### Advance Workflow Instance
-tbd
+![AdvanceWorkflowInstanceEventFlow_Refactored.png](AdvanceWorkflowInstanceEventFlow_Refactored.png)
 
 ## Data Types
 tbd
+
+### TODO
+* think about still having participants and the acceptance mechanisms from the old prototype => maybe it's not that much work
+  * we would still need authorization in the participants (don't just extend the participantsAccepted array but rather add the source participant depending on the event)
+  * also think about starting simple without participants and adding that mechanism later (if there's time)
+  * should we still use the point-2-point strategy or also use OrbitDB for participants (participants in the context of the old prototype, not external participants/organizations)
 
 ## FAQ
 ### Why are sometimes db-sided projections and sometimes client side projections used
