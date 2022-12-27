@@ -1,7 +1,8 @@
 import { Module } from '@nestjs/common';
-import { ZeebeModule } from './zeebe';
 
 @Module({
-  imports: [ZeebeModule]
+  // disable ZeebeModule temporarily for Refactoring
+  // imports: [ZeebeModule]
+  imports: []
 })
 export class IntegrationsModule {}

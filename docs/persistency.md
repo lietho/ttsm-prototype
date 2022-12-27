@@ -195,6 +195,8 @@
   * we would still need authorization in the participants (don't just extend the participantsAccepted array but rather add the source participant depending on the event)
   * also think about starting simple without participants and adding that mechanism later (if there's time)
   * should we still use the point-2-point strategy or also use OrbitDB for participants (participants in the context of the old prototype, not external participants/organizations)
+* Wouldn't a per-instance local configuration of the rule services fit better than storing them in EventStore DB?
+  * Or what's the reason then for storing them in the EventStore DB and having controllers for managing them?
 
 ## FAQ
 ### Why are sometimes db-sided projections and sometimes client side projections used
