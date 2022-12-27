@@ -170,7 +170,7 @@
 ![AdvanceWorkflowInstanceEventFlow_Old.png](AdvanceWorkflowInstanceEventFlow_Old.png)
 
 ## Data Flow Refactored (v1)
-Version 1:
+**Version 1:**
 * without local participants / peers
 * without external events
 * without Zeebe integration
@@ -184,8 +184,11 @@ Version 1:
 ### Advance Workflow Instance
 ![AdvanceWorkflowInstanceEventFlow_Refactored.png](AdvanceWorkflowInstanceEventFlow_Refactored.png)
 
-## Data Types
-tbd
+### External Events: Launch External Workflow Instance
+![ExternalEvents-Workflow.png](ExternalEvents-Workflow.png)
+
+### External Events: Advance External Workflow Instance
+![ExternalEvents-WorkflowInstance.png](ExternalEvents-WorkflowInstance.png)
 
 ### TODO
 * think about still having participants and the acceptance mechanisms from the old prototype => maybe it's not that much work
