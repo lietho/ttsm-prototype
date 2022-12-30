@@ -1,6 +1,5 @@
 import { randomUUIDv4 } from "src/core/utils";
 import * as eventTypes from "src/persistence/persistence.events";
-import * as ruleEventTypes from "src/rules/rules.events";
 
 export const WORKFLOWS_PROJECTION_NAME = 'custom-projections.workflows.' + randomUUIDv4();
 export const WORKFLOWS_PROJECTION = `
@@ -65,17 +64,5 @@ export const WORKFLOW_INSTANCES_PROJECTION = `
             },
         })
         .transformBy((state) => state.instances)
-        .outputState();
-  `;
-
-export const RULE_SERVICES_PROJECTION_NAME = 'custom-projections.rules.' + randomUUIDv4();
-export const RULE_SERVICES_PROJECTION = `
-    fromAll()
-        .when({
-            $init: () => ({ services: {} }),
-            "${ruleEventTypes.registerRuleService.type}": (s, e) => { s.services[e.data.id] = e.data; },
-            "${ruleEventTypes.unregisterRuleService.type}": (s, e) => { delete s.services[e.data.id]; },
-        })
-        .transformBy((state) => state.services)
         .outputState();
   `;

@@ -5,7 +5,6 @@ import { aggregateWorkflowEvents } from "src/persistence/utils/workflow-aggregat
 import { aggregateWorkflowInstanceEvents } from "src/persistence/utils/workflow-instance-aggregation";
 import { randomUUIDv4 } from "../core/utils";
 import { environment } from "../environment";
-import { RuleService } from "../rules";
 import {
   Workflow,
   WorkflowInstance,
@@ -17,8 +16,6 @@ import {
 import {
   client as eventStore,
   connect as connectToEventStore,
-  RULE_SERVICES_PROJECTION,
-  RULE_SERVICES_PROJECTION_NAME,
   WORKFLOW_INSTANCES_PROJECTION,
   WORKFLOW_INSTANCES_PROJECTION_NAME,
   WORKFLOWS_PROJECTION,
@@ -43,10 +40,9 @@ export class PersistenceService implements OnModuleInit, OnModuleDestroy {
     this.logger.log(`Establishing connection to event store on "${environment.persistence.serviceUrl}"`);
     await connectToEventStore();
 
-    this.logger.log(`Creating event store projections: ${[WORKFLOWS_PROJECTION_NAME, WORKFLOW_INSTANCES_PROJECTION_NAME, RULE_SERVICES_PROJECTION_NAME].join(", ")}`);
+    this.logger.log(`Creating event store projections: ${[WORKFLOWS_PROJECTION_NAME, WORKFLOW_INSTANCES_PROJECTION_NAME].join(", ")}`);
     await eventStore.createProjection(WORKFLOWS_PROJECTION_NAME, WORKFLOWS_PROJECTION);
     await eventStore.createProjection(WORKFLOW_INSTANCES_PROJECTION_NAME, WORKFLOW_INSTANCES_PROJECTION);
-    await eventStore.createProjection(RULE_SERVICES_PROJECTION_NAME, RULE_SERVICES_PROJECTION);
   }
 
   /**
@@ -81,15 +77,6 @@ export class PersistenceService implements OnModuleInit, OnModuleDestroy {
   }
 
   /**
-   * Dispatches a rules event.
-   * @param id Rule service ID.
-   * @param event Event to be dispatched.
-   */
-  async dispatchRulesEvent<T>(id: string, event: PersistenceEvent<T>): Promise<void> {
-    return await this.appendToStream(`rules.${id}`, event);
-  }
-
-  /**
    * Launches a new instances of a certain workflow.
    * @param proposal
    */
@@ -119,7 +106,7 @@ export class PersistenceService implements OnModuleInit, OnModuleDestroy {
         if (timestamp.getTime() > at.getTime()) {
           break;
         }
-        events.push(eventStream);
+        events.push(event);
       }
 
       return aggregateWorkflowEvents(events);
@@ -137,7 +124,7 @@ export class PersistenceService implements OnModuleInit, OnModuleDestroy {
         if (timestamp.getTime() > at.getTime()) {
           break;
         }
-        events.push(eventStream);
+        events.push(event);
       }
 
       return aggregateWorkflowInstanceEvents(events);
@@ -213,32 +200,22 @@ export class PersistenceService implements OnModuleInit, OnModuleDestroy {
   }
 
   /**
-   * Returns a registered rule service by its ID.
-   * @param id
-   */
-  async getRegisteredRuleServiceById(id: string): Promise<RuleService> {
-    return (await this.getRuleServicesAggregate())[id];
-  }
-
-  /**
-   * Returns all rule services registered.
-   */
-  async getAllRegisteredRuleServices(): Promise<RuleService[]> {
-    return Object
-      .entries(await this.getRuleServicesAggregate())
-      .map(([, ruleService]) => ruleService);
-  }
-
-  /**
    * Subscribes to ALL events emitted in the event store. This is a volatile subscription which means
    * that past events are ignored and only events are emitted that were dispatched after subscription.
    * @param eventHandler Event handler.
    */
-  async subscribeToAll(eventHandler: (resolvedEvent: AllStreamResolvedEvent) => void): Promise<void> {
+  async subscribeToAll(eventHandler: (eventType: string, eventData: unknown) => void): Promise<void> {
     const subscription = eventStore.subscribeToAll({ fromPosition: "end" });
     this.subscriptions.push(subscription);
-    for await (const resolvedEvent of subscription) {
-      eventHandler(resolvedEvent);
+    for await (const { event } of subscription) {
+      if (event == null) {
+        continue;
+      }
+
+      const eventType = event.type;
+      const eventData = event.data as unknown;
+
+      eventHandler(eventType, eventData);
     }
   }
 
@@ -256,10 +233,6 @@ export class PersistenceService implements OnModuleInit, OnModuleDestroy {
       await eventStore.disableProjection(WORKFLOW_INSTANCES_PROJECTION_NAME);
       await eventStore.deleteProjection(WORKFLOW_INSTANCES_PROJECTION_NAME);
     }
-    if (await this.existsProjection(RULE_SERVICES_PROJECTION_NAME)) {
-      await eventStore.disableProjection(RULE_SERVICES_PROJECTION_NAME);
-      await eventStore.deleteProjection(RULE_SERVICES_PROJECTION_NAME);
-    }
   }
 
   /**
@@ -276,14 +249,6 @@ export class PersistenceService implements OnModuleInit, OnModuleDestroy {
    */
   private async getWorkflowInstancesAggregate(): Promise<Record<string, WorkflowInstance>> {
     return await eventStore.getProjectionResult<Record<string, WorkflowInstance>>(WORKFLOW_INSTANCES_PROJECTION_NAME) ?? {};
-  }
-
-  /**
-   * Returns the projected aggregate of all rule services.
-   * @private
-   */
-  private async getRuleServicesAggregate(): Promise<Record<string, RuleService>> {
-    return await eventStore.getProjectionResult<Record<string, RuleService>>(RULE_SERVICES_PROJECTION_NAME) ?? {};
   }
 
   /**

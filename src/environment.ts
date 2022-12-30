@@ -25,5 +25,8 @@ export const environment = {
   },
   persistence: {
     serviceUrl: process.env.PERSISTENCE_SERVICE_URL ?? 'esdb://localhost:2113?tls=false'
+  },
+  rules: {
+    serviceUrl: process.env.RULES_SERVICE_URL ?? 'esdb://localhost:2113?tls=false'
   }
 };

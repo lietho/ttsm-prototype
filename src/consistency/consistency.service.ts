@@ -52,13 +52,7 @@ export class ConsistencyService implements ConsistencyStrategy, OnModuleInit {
 
   /** @inheritDoc */
   onModuleInit() {
-    this.persistence.subscribeToAll(async (resolvedEvent) => {
-      const { event } = resolvedEvent;
-      if (event == null) return;
-
-      const eventType = event?.type;
-      const eventData = event.data as unknown;
-
+    this.persistence.subscribeToAll(async (eventType: string, eventData: unknown) => {
       // Interaction with participants regarding workflow specifications
       if (persistenceEvents.localWorkflowAcceptedByRuleService.sameAs(eventType)) {
         const approval = eventData as WorkflowProposalRuleServiceApproval;
