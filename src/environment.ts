@@ -1,3 +1,4 @@
+import { SupportedPersistenceStrategies } from "./persistence";
 import { SupportedConsistencyStrategies } from './consistency';
 
 export const environment = {
@@ -24,7 +25,10 @@ export const environment = {
     }
   },
   persistence: {
-    serviceUrl: process.env.PERSISTENCE_SERVICE_URL ?? 'esdb://localhost:2113?tls=false'
+    strategy: (process.env.PERSISTENCE_STRATEGY ?? 'eventstore') as SupportedPersistenceStrategies,
+    eventStore: {
+      serviceUrl: process.env.PERSISTENCE_SERVICE_URL ?? 'esdb://localhost:2113?tls=false',
+    }
   },
   rules: {
     serviceUrl: process.env.RULES_SERVICE_URL ?? 'esdb://localhost:2113?tls=false'

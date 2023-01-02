@@ -1,15 +1,14 @@
-import { Injectable, Logger } from '@nestjs/common';
-import { Subject } from 'rxjs';
-import { ConsistencyStrategy } from './consistency-strategy';
-import { ConsistencyMessage } from '../models';
-import { randomEthereumAddress } from '../../core/utils';
+import { Logger } from "@nestjs/common";
+import { Subject } from "rxjs";
+import { randomEthereumAddress } from "../../core/utils";
+import { ConsistencyMessage } from "../models";
+import { ConsistencyStrategy } from "./consistency-strategy";
 
 /**
  * This strategy does not use any consistency algorithms or backend services whatsoever. A dispatched messaged will
  * directly be fed back to the {@link ConsistencyStrategy.actions$} stream after a preconfigured delay in milliseconds
  * (default is 500 ms; can be configured with {@link NoopStrategy.delay}).
  */
-@Injectable()
 export class NoopStrategy implements ConsistencyStrategy {
 
   private readonly logger = new Logger(NoopStrategy.name);

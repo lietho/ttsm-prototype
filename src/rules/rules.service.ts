@@ -23,7 +23,7 @@ export class RulesService implements OnModuleInit {
 
   /** @inheritDoc */
   async onModuleInit() {
-    this.logger.log(`Establishing connection to event store on "${environment.persistence.serviceUrl}"`);
+    this.logger.log(`Establishing connection to event store on "${environment.persistence.eventStore.serviceUrl}"`);
     await connectToEventStore();
 
     this.logger.log(`Creating event store projections: ${RULE_SERVICES_PROJECTION_NAME}`);
@@ -138,6 +138,15 @@ export class RulesService implements OnModuleInit {
       await eventStore.disableProjection(RULE_SERVICES_PROJECTION_NAME);
       await eventStore.deleteProjection(RULE_SERVICES_PROJECTION_NAME);
     }
+  }
+
+  /**
+   * Returns all rule services registered.
+   */
+  async getAllRegisteredRuleServices(): Promise<RuleService[]> {
+    return Object
+      .entries(await this.getRuleServicesAggregate())
+      .map(([, ruleService]) => ruleService);
   }
 
   /**
@@ -278,15 +287,6 @@ export class RulesService implements OnModuleInit {
    */
   private async getRegisteredRuleServiceById(id: string): Promise<RuleService> {
     return (await this.getRuleServicesAggregate())[id];
-  }
-
-  /**
-   * Returns all rule services registered.
-   */
-  private async getAllRegisteredRuleServices(): Promise<RuleService[]> {
-    return Object
-      .entries(await this.getRuleServicesAggregate())
-      .map(([, ruleService]) => ruleService);
   }
 
   /**
