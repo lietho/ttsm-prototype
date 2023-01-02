@@ -2,7 +2,7 @@ import { Logger } from "@nestjs/common";
 import { Subject } from "rxjs";
 import { randomEthereumAddress } from "../../core/utils";
 import { ConsistencyMessage } from "../models";
-import { ConsistencyStrategy } from "./consistency-strategy";
+import { ConsistencyStrategy, Status } from "./consistency-strategy";
 
 /**
  * This strategy does not use any consistency algorithms or backend services whatsoever. A dispatched messaged will
@@ -28,10 +28,12 @@ export class NoopStrategy implements ConsistencyStrategy {
       this.logger.log(`Consistency message received: ${JSON.stringify(msg)}`);
       this.actions$.next(msg);
     }, this.delay);
+
+    return Promise.resolve("OK" as Status);
   }
 
   /** @inheritDoc */
-  async getStatus() {
-    return 'OK';
+  async getStatus(): Promise<Status> {
+    return 'OK' as Status;
   }
 }

@@ -7,7 +7,7 @@ import Web3 from "web3";
 import { ethereumSha256 } from "../../core/utils";
 import { environment } from "../../environment";
 import { ConsistencyMessage } from "../models";
-import { ConsistencyStrategy } from "./consistency-strategy";
+import { ConsistencyStrategy, Status } from "./consistency-strategy";
 import { EvmStrategyAbi } from "./evm-strategy.abi";
 
 
@@ -83,7 +83,7 @@ export class EvmStrategy implements ConsistencyStrategy, OnModuleInit {
   }
 
   /** @inheritDoc */
-  async dispatch<T>(msg: ConsistencyMessage<T>) {
+  async dispatch<T>(msg: ConsistencyMessage<T>): Promise<Status> {
 
     // Stringify the payload to hash it
     const messageAsString = JSON.stringify(msg.payload);
@@ -112,7 +112,7 @@ export class EvmStrategy implements ConsistencyStrategy, OnModuleInit {
         this.logger.debug(`Sending message over a peer-to-peer network to "${url}"...`);
         return await firstValueFrom(this.http.post(url + '/_internal/consistency/evm', msg));
       })
-    );
+    ).then(() => 'OK' as Status, () => 'NOK' as Status);
 
     // The sender also has to receive the message
     await this.receiveConsistencyMessage(msg);
@@ -120,10 +120,10 @@ export class EvmStrategy implements ConsistencyStrategy, OnModuleInit {
   }
 
   /** @inheritDoc */
-  async getStatus() {
+  async getStatus(): Promise<Status> {
     return Promise.all(environment.consistency.evm.peerUrls
       .map(async (url) => await firstValueFrom(this.http.get(url + '/ping')))
-    );
+    ).then(() => 'OK', () => 'NOK');
   }
 }
 

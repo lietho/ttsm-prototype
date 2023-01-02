@@ -5,7 +5,7 @@ import { CONSISTENCY_STRATEGY_PROVIDER_TOKEN } from "src/consistency/consistency
 import { randomEthereumAddress } from "../../core/utils";
 import { environment } from "../../environment";
 import { ConsistencyMessage } from "../models";
-import { ConsistencyStrategy } from "./consistency-strategy";
+import { ConsistencyStrategy, Status } from "./consistency-strategy";
 
 export class Point2PointStrategy implements ConsistencyStrategy {
 
@@ -22,15 +22,15 @@ export class Point2PointStrategy implements ConsistencyStrategy {
   }
 
   /** @inheritDoc */
-  dispatch<T>(msg: ConsistencyMessage<T>) {
+  async dispatch<T>(msg: ConsistencyMessage<T>): Promise<Status> {
     msg = { ...msg, commitmentReference: randomEthereumAddress() };
     this.logger.debug(`Dispatching new message: ${JSON.stringify(msg)}`);
-    const result = Promise.all(environment.consistency.p2p.peerUrls
+    const result = await Promise.all(environment.consistency.p2p.peerUrls
       .map(async (url) => {
         this.logger.debug(`  - dispatching to "${url}"...`);
         return await firstValueFrom(this.http.post(url + '/_internal/consistency/p2p', msg));
       })
-    );
+    ).then(() => 'OK' as Status, () => 'NOK' as Status);
 
     // The sender also has to receive the message
     this.receiveConsistencyMessage(msg);
@@ -38,10 +38,10 @@ export class Point2PointStrategy implements ConsistencyStrategy {
   }
 
   /** @inheritDoc */
-  async getStatus() {
+  async getStatus(): Promise<Status> {
     return Promise.all(environment.consistency.p2p.peerUrls
       .map(async (url) => await firstValueFrom(this.http.get(url + '/ping')))
-    );
+    ).then(() => 'OK', () => 'NOK');
   }
 }
 
