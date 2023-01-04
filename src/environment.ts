@@ -25,9 +25,14 @@ export const environment = {
     }
   },
   persistence: {
-    strategy: (process.env.PERSISTENCE_STRATEGY ?? 'eventstore') as SupportedPersistenceStrategies,
+    strategy: (process.env.PERSISTENCE_STRATEGY ?? 'orbitdb') as SupportedPersistenceStrategies,
     eventStore: {
       serviceUrl: process.env.PERSISTENCE_SERVICE_URL ?? 'esdb://localhost:2113?tls=false',
+    },
+    orbitDB: {
+      ipfsUrl: process.env.PERSISTENCE_ORBITDB_IPFS_URL ?? 'http://127.0.0.1:5101',
+      localDirectory: process.env.PERSISTENCE_ORBITDB_DIRECTORY ?? 'data/orbitdb',
+      id: process.env.PERSISTENCE_ORBITDB_ID ?? 'organization-a'
     }
   },
   rules: {

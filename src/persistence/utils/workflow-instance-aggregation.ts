@@ -57,6 +57,6 @@ export function aggregateWorkflowInstanceEvents(events: PersistenceEvent<unknown
       result.acceptedByParticipants = true;
     }
 
-    return null;
+    return result;
   }, null as WorkflowInstance);
 }

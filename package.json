@@ -35,7 +35,10 @@
     "rxjs": "7.8.0",
     "web3": "1.8.1",
     "xstate": "4.35.1",
-    "zeebe-node": "8.1.2"
+    "zeebe-node": "8.1.2",
+    "ipfs-http-client": "59.0.0",
+    "orbit-db": "0.28.7",
+    "multiformats": "9.9.0"
   },
   "devDependencies": {
     "@nestjs/cli": "9.1.8",
@@ -45,6 +48,7 @@
     "@types/jest": "29.2.5",
     "@types/node": "18.11.18",
     "@types/supertest": "2.0.12",
+    "@constl/orbit-db-types": "1.0.5",
     "@typescript-eslint/eslint-plugin": "5.47.1",
     "@typescript-eslint/parser": "5.47.1",
     "axios": "1.2.2",
@@ -61,6 +65,12 @@
     "ts-node": "10.9.1",
     "tsconfig-paths": "4.1.1",
     "typescript": "4.9.4"
+  },
+  "overrides": {
+    "ipfs-core-types": {
+      "multiformats": "10.0.3"
+    },
+    "ipfs-pubsub-1on1": "git+https://github.com/ipfs-shipyard/ipfs-pubsub-1on1.git#adb9378009f0329eb833c4a9e2a507057628b976"
   },
   "jest": {
     "moduleFileExtensions": [
