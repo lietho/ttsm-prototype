@@ -5,15 +5,18 @@ import * as eventTypes from "src/persistence/persistence.events";
 import { OrbitDBEventLogManager } from "src/persistence/strategies/orbitdb/orbitdb-eventlog-manager";
 import {
   Workflow,
+  WorkflowContext,
   WorkflowInstance,
+  WorkflowInstanceContext,
   WorkflowInstanceProposal,
   WorkflowInstanceTransition,
+  WorkflowInstanceTransitionContext,
   WorkflowProposal
 } from "src/workflow";
 import {
   aggregateAllWorkflowEvents,
-  aggregateWorkflowEvents,
-  aggregateWorkflowInstanceEvents,
+  aggregateAllWorkflowInstanceEvents,
+  aggregateWorkflowInstanceIds,
   PersistenceEvent
 } from "../../utils";
 import { PersistenceStrategy, StateTransition } from "../persistence-strategy";
@@ -35,6 +38,7 @@ export class OrbitDBStrategy implements PersistenceStrategy, OnModuleInit, OnMod
       ...proposal,
       consistencyId: randomUUIDv4()
     };
+    await this.createWorkflowInstanceDatabase(proposedWorkflow.consistencyId);
     await this.appendToStream(this.getWorkflowsPath(), eventTypes.proposeWorkflow(proposedWorkflow));
     return proposedWorkflow as Workflow;
   }
@@ -49,18 +53,21 @@ export class OrbitDBStrategy implements PersistenceStrategy, OnModuleInit, OnMod
       consistencyId: randomUUIDv4()
     };
 
-    await this.appendToStream(this.getWorkflowInstancesPath(proposedWorkflowInstance.consistencyId), eventTypes.launchWorkflowInstance(proposedWorkflowInstance));
+    await this.createWorkflowInstanceEventsDatabases(proposedWorkflowInstance.workflowId, proposedWorkflowInstance.consistencyId);
+    await this.appendToStream(this.getWorkflowInstancesPath(proposedWorkflowInstance.workflowId), eventTypes.launchWorkflowInstance(proposedWorkflowInstance));
     return proposedWorkflowInstance as WorkflowInstance;
   }
 
-  async dispatchInstanceEvent<T>(id: string, event: PersistenceEvent<T>): Promise<void> {
-    // TODO id is the instanceId which is only needed by eventStore DB, we would need a generic way to retrieve the workflowId in instanceEvents
-    // e.g., a WorkflowInstanceEvent interface
-    return await this.appendToStream(this.getWorkflowInstancesPath(id), event);
+  async dispatchInstanceEvent<T extends WorkflowInstanceContext>(id: string, event: PersistenceEvent<T>): Promise<void> {
+    return await this.appendToStream(this.getWorkflowInstancesPath(event.data.workflowId), event);
   }
 
   async advanceWorkflowInstanceState(transition: WorkflowInstanceTransition): Promise<void> {
-    await this.appendToStream(`instances.${transition.id}`, eventTypes.advanceWorkflowInstance(transition));
+    await this.appendToStream(this.getWorkflowInstanceLocalEventsPath(transition.workflowId,  transition.id), eventTypes.advanceWorkflowInstance(transition));
+  }
+
+  async dispatchTransitionEvent<T extends WorkflowInstanceTransitionContext>(id: string, event: PersistenceEvent<T>): Promise<void> {
+    return await this.appendToStream(this.getWorkflowInstanceLocalEventsPath(event.data.workflowId,  id), event);
   }
 
   async getAllWorkflows(): Promise<Workflow[]> {
@@ -80,47 +87,28 @@ export class OrbitDBStrategy implements PersistenceStrategy, OnModuleInit, OnMod
       .map(([, instance]) => instance);
   }
 
-  async getWorkflowInstanceById(id: string): Promise<WorkflowInstance> {
+  async getWorkflowInstanceById(workflowId: string, id: string): Promise<WorkflowInstance> {
     return (await this.getWorkflowInstancesAggregate())[id];
   }
 
   async getWorkflowStateAt(id: string, at: Date): Promise<Workflow | null> {
-    const eventStream = await this.readStream(`workflows.${id}`);
-    try {
-      const events = [];
-      for await (const event of eventStream) {
-        if (event.created > at.getTime()) {
-          break;
-        }
-        events.push(event);
-      }
-
-      return aggregateWorkflowEvents(events);
-    } catch (e) {
-      return null;
-    }
+    return (await this.getWorkflowsAggregate(event =>
+      event.data.id === id &&
+      event.created <= at.getTime()
+    ))[id];
   }
 
-  async getWorkflowInstanceStateAt(id: string, at: Date): Promise<WorkflowInstance | null> {
-    const eventStream = await this.readStream(`instances.${id}`);
-    try {
-      const events = [];
-      for await (const event of eventStream) {
-        if (event.created > at.getTime()) {
-          break;
-        }
-        events.push(event);
-      }
-
-      return aggregateWorkflowInstanceEvents(events);
-    } catch (e) {
-      return null;
-    }
+  async getWorkflowInstanceStateAt(workflowId: string, id: string, at: Date): Promise<WorkflowInstance | null> {
+    return (await this.getWorkflowInstancesAggregate(event =>
+      event.data.workflowId === workflowId &&
+      event.data.id === id &&
+      event.created <= at.getTime()
+    ))[id];
   }
 
-  async getWorkflowInstanceStateTransitionPayloadsUntil(id: string, until: Date): Promise<StateTransition[] | null> {
+  async getWorkflowInstanceStateTransitionPayloadsUntil(workflowId: string, id: string, until: Date): Promise<StateTransition[] | null> {
     const result: StateTransition[] = [];
-    const events = await this.readStream(`instances.${id}`);
+    const events = await this.readStream(this.getWorkflowInstanceLocalEventsPath(workflowId, id));
     try {
       for await (const event of events) {
         if (event.created > until.getTime()) {
@@ -156,7 +144,7 @@ export class OrbitDBStrategy implements PersistenceStrategy, OnModuleInit, OnMod
   private async createInitialDatabases() {
     // Create Workflow DB
     await this.dbManager.addConnection(this.getWorkflowsPath(), {
-      type: 'eventlog',
+      type: "eventlog",
       accessController: {
         write: [this.dbManager.identityId]
       }
@@ -165,11 +153,27 @@ export class OrbitDBStrategy implements PersistenceStrategy, OnModuleInit, OnMod
     // Create Workflow Instances DBs
     const workflowIds = await this.getWorkflowsAggregate().then(aggregate => Object.keys(aggregate));
     await Promise.all(workflowIds.map(workflowId => this.createWorkflowInstanceDatabase(workflowId)));
+
+    type WorkflowId = string;
+    type WorkflowInstanceId = string;
+    const workflowInstanceIds: [WorkflowId, WorkflowInstanceId][] =
+      await this.getWorkflowInstances()
+        .then(instanceContexts => instanceContexts.map(({workflowId, id}) => [workflowId, id]));
+    await Promise.all(workflowInstanceIds.map(([workflowId, instanceId]) => this.createWorkflowInstanceEventsDatabases(workflowId, instanceId)));
   }
 
   private async createWorkflowInstanceDatabase(workflowId: string) {
     await this.dbManager.addConnection(this.getWorkflowInstancesPath(workflowId), {
-      type: 'eventlog',
+      type: "eventlog",
+      accessController: {
+        write: [this.dbManager.identityId]
+      }
+    });
+  }
+
+  private async createWorkflowInstanceEventsDatabases(workflowId: string, instanceId: string) {
+    await this.dbManager.addConnection(this.getWorkflowInstanceLocalEventsPath(workflowId, instanceId), {
+      type: "eventlog",
       accessController: {
         write: [this.dbManager.identityId]
       }
@@ -184,21 +188,50 @@ export class OrbitDBStrategy implements PersistenceStrategy, OnModuleInit, OnMod
     return `organization.${this.dbManager.identityId}.workflows.${workflowId}.instances`;
   }
 
+  private getWorkflowInstanceLocalEventsPath(workflowId: string, instanceId: string): string {
+    return `organization.${this.dbManager.identityId}.workflows.${workflowId}.instances.${instanceId}.localEvents`;
+  }
+
   /**
    * Returns the projected aggregate of all workflows.
    * @private
    */
-  private async getWorkflowsAggregate(): Promise<Record<string, Workflow>> {
+  private async getWorkflowsAggregate<T extends WorkflowContext>(filter?: (event: PersistenceEvent<T>) => boolean): Promise<Record<string, Workflow>> {
     const events = await this.readStream(this.getWorkflowsPath());
-    return aggregateAllWorkflowEvents(events);
+    const filteredEvents = filter != null ? events.filter(filter) : events;
+    return aggregateAllWorkflowEvents(filteredEvents);
   }
+
+  private async getWorkflowInstances(): Promise<WorkflowInstanceContext[]> {
+    const workflowIds = await this.getWorkflowsAggregate().then(aggregate => Object.keys(aggregate));
+    const workflowInstanceEvents = (await Promise.all(
+      workflowIds.map(workflowId => this.readStream(this.getWorkflowInstancesPath(workflowId)))
+    )).flatMap(events => events);
+
+    return aggregateWorkflowInstanceIds(workflowInstanceEvents);
+  }
+
 
   /**
    * Returns the projected aggregate of all workflow instances.
    * @private
    */
-  private async getWorkflowInstancesAggregate(): Promise<Record<string, WorkflowInstance>> {
-    return {};
+  private async getWorkflowInstancesAggregate<T extends WorkflowInstanceContext>(filter?: (event: PersistenceEvent<T>) => boolean): Promise<Record<string, WorkflowInstance>> {
+    const workflowIds = await this.getWorkflowsAggregate(filter).then(aggregate => Object.keys(aggregate));
+    const workflowInstanceEvents = (await Promise.all(
+      workflowIds.map(workflowId => this.readStream(this.getWorkflowInstancesPath(workflowId)))
+    )).flatMap(events => events);
+
+    const filteredWorkflowInstanceEvents = filter != null ? workflowInstanceEvents.filter(filter) : workflowInstanceEvents;
+
+    const workflowInstanceIds = aggregateWorkflowInstanceIds(filteredWorkflowInstanceEvents);
+    const workflowInstanceLocalEvents = await Promise.all(
+      workflowInstanceIds.map(({workflowId, id}) => this.readStream(this.getWorkflowInstanceLocalEventsPath(workflowId, id)))
+    ).then(events => events.flatMap(e => e));
+
+    const filteredWorkflowInstanceLocalEvents = filter != null ? workflowInstanceLocalEvents.filter(filter) : workflowInstanceLocalEvents;
+
+    return aggregateAllWorkflowInstanceEvents([...filteredWorkflowInstanceEvents, ...filteredWorkflowInstanceLocalEvents]);
   }
 
   /**
@@ -208,7 +241,10 @@ export class OrbitDBStrategy implements PersistenceStrategy, OnModuleInit, OnMod
    */
   private async appendToStream(streamName: string, event: PersistenceEvent<unknown>): Promise<void> {
     this.logger.debug(`Write to stream "${streamName}": ${JSON.stringify(event)}`);
-    await this.dbManager.addEvent(streamName, event);
+
+    // remove all undefined values as IPLD cannot encode undefined
+    const cleanedEvent = JSON.parse(JSON.stringify(event));
+    await this.dbManager.addEvent(streamName, cleanedEvent);
   }
 
   /**

@@ -1,7 +1,7 @@
 import { Inject, Injectable } from "@nestjs/common";
 import {
   Workflow,
-  WorkflowInstance,
+  WorkflowInstance, WorkflowInstanceContext,
   WorkflowInstanceProposal,
   WorkflowInstanceTransition,
   WorkflowProposal
@@ -26,7 +26,7 @@ export class PersistenceService {
    * Proposes a new workflow to all participants.
    * @param proposal
    */
-  async proposeWorkflow(proposal: Omit<WorkflowProposal, "consistencyId">): Promise<Workflow> {
+  async proposeWorkflow(proposal: Omit<WorkflowProposal, "consistencyId" | "id">): Promise<Workflow> {
     return await this.persistenceStrategy.proposeWorkflow(proposal);
   }
 
@@ -43,7 +43,7 @@ export class PersistenceService {
    * Launches a new instances of a certain workflow.
    * @param proposal
    */
-  async launchWorkflowInstance(proposal: Omit<WorkflowInstanceProposal, "consistencyId">): Promise<WorkflowInstance> {
+  async launchWorkflowInstance(proposal: Omit<WorkflowInstanceProposal, "consistencyId" | "id">): Promise<WorkflowInstance> {
     return await this.persistenceStrategy.launchWorkflowInstance(proposal);
   }
 
@@ -52,8 +52,17 @@ export class PersistenceService {
    * @param id Workflow instance ID.
    * @param event Event to be dispatched.
    */
-  async dispatchInstanceEvent<T>(id: string, event: PersistenceEvent<T>): Promise<void> {
+  async dispatchInstanceEvent<T extends WorkflowInstanceContext>(id: string, event: PersistenceEvent<T>): Promise<void> {
     return await this.persistenceStrategy.dispatchInstanceEvent(id, event);
+  }
+
+  /**
+   * Dispatches a workflow instance transition event.
+   * @param id Workflow instance ID.
+   * @param event Event to be dispatched.
+   */
+  async dispatchTransitionEvent<T extends WorkflowInstanceContext>(id: string, event: PersistenceEvent<T>): Promise<void> {
+    return await this.persistenceStrategy.dispatchTransitionEvent(id, event);
   }
 
   /**
@@ -68,17 +77,18 @@ export class PersistenceService {
     return await this.persistenceStrategy.getWorkflowStateAt(id, at);
   }
 
-  async getWorkflowInstanceStateAt(id: string, at: Date): Promise<WorkflowInstance | null> {
-    return await this.persistenceStrategy.getWorkflowInstanceStateAt(id, at);
+  async getWorkflowInstanceStateAt(workflowId: string, id: string, at: Date): Promise<WorkflowInstance | null> {
+    return await this.persistenceStrategy.getWorkflowInstanceStateAt(workflowId, id, at);
   }
 
   /**
    * Returns all payloads attached to state transitions until the given point in time.
+   * @param workflowId Workflow ID.
    * @param id Workflow instance ID.
    * @param until Point in time until which should be search.
    */
-  async getWorkflowInstanceStateTransitionPayloadsUntil(id: string, until: Date): Promise<StateTransition[] | null> {
-    return await this.persistenceStrategy.getWorkflowInstanceStateTransitionPayloadsUntil(id, until);
+  async getWorkflowInstanceStateTransitionPayloadsUntil(workflowId: string, id: string, until: Date): Promise<StateTransition[] | null> {
+    return await this.persistenceStrategy.getWorkflowInstanceStateTransitionPayloadsUntil(workflowId, id, until);
   }
 
   /**
@@ -93,8 +103,8 @@ export class PersistenceService {
    * Returns the workflow instance with the given ID.
    * @param id Workflow instance ID.
    */
-  async getWorkflowInstanceById(id: string): Promise<WorkflowInstance> {
-    return await this.persistenceStrategy.getWorkflowInstanceById(id);
+  async getWorkflowInstanceById(workflowId: string, id: string): Promise<WorkflowInstance> {
+    return await this.persistenceStrategy.getWorkflowInstanceById(workflowId, id);
   }
 
   /**

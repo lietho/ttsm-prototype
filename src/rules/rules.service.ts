@@ -30,6 +30,7 @@ export class RulesService implements OnModuleInit {
     await eventStore.createProjection(RULE_SERVICES_PROJECTION_NAME, RULE_SERVICES_PROJECTION);
 
     this.persistence.subscribeToAll(async (eventType: string, eventData: unknown) => {
+      this.logger.log(`Received Event: ${eventType}`);
       // Validate against all registered rule services if the proposal is valid
       if (persistenceEvents.proposeWorkflow.sameAs(eventType)) await this.onLocalWorkflowProposal(eventData as WorkflowProposal);
       if (persistenceEvents.receivedWorkflow.sameAs(eventType)) await this.onExternalWorkflowProposal(eventData as WorkflowProposal);
@@ -203,13 +204,18 @@ export class RulesService implements OnModuleInit {
     if (validationErrors.length <= 0) {
       await this.persistence.dispatchInstanceEvent(
         proposal.consistencyId,
-        persistenceEvents.localWorkflowInstanceAcceptedByRuleService({ id: proposal.consistencyId, proposal })
+        persistenceEvents.localWorkflowInstanceAcceptedByRuleService({
+          id: proposal.consistencyId,
+          workflowId: proposal.workflowId,
+          proposal
+        })
       );
     } else {
       await this.persistence.dispatchInstanceEvent(
         proposal.consistencyId,
         persistenceEvents.localWorkflowInstanceRejectedByRuleService({
           id: proposal.consistencyId,
+          workflowId: proposal.workflowId,
           proposal,
           validationErrors
         })
@@ -227,13 +233,18 @@ export class RulesService implements OnModuleInit {
     if (validationErrors.length <= 0) {
       await this.persistence.dispatchInstanceEvent(
         proposal.consistencyId,
-        persistenceEvents.receivedWorkflowInstanceAcceptedByRuleService({ id: proposal.consistencyId, proposal })
+        persistenceEvents.receivedWorkflowInstanceAcceptedByRuleService({
+          id: proposal.consistencyId,
+          workflowId: proposal.workflowId,
+          proposal
+        })
       );
     } else {
       await this.persistence.dispatchInstanceEvent(
         proposal.consistencyId,
         persistenceEvents.receivedWorkflowInstanceRejectedByRuleService({
           id: proposal.consistencyId,
+          workflowId: proposal.workflowId,
           proposal,
           validationErrors
         })
@@ -249,14 +260,23 @@ export class RulesService implements OnModuleInit {
   private async onLocalInstanceTransition(transition: WorkflowInstanceTransition) {
     const validationErrors = await this.validateInstanceTransition(transition);
     if (validationErrors.length <= 0) {
-      await this.persistence.dispatchInstanceEvent(
+      await this.persistence.dispatchTransitionEvent(
         transition.id,
-        persistenceEvents.localTransitionAcceptedByRuleService({ id: transition.id, transition })
+        persistenceEvents.localTransitionAcceptedByRuleService({
+          id: transition.id,
+          workflowId: transition.workflowId,
+          transition
+        })
       );
     } else {
-      await this.persistence.dispatchInstanceEvent(
+      await this.persistence.dispatchTransitionEvent(
         transition.id,
-        persistenceEvents.localTransitionRejectedByRuleService({ id: transition.id, transition, validationErrors })
+        persistenceEvents.localTransitionRejectedByRuleService({
+          id: transition.id,
+          workflowId: transition.workflowId,
+          transition,
+          validationErrors
+        })
       );
     }
   }
@@ -269,14 +289,23 @@ export class RulesService implements OnModuleInit {
   private async onExternalInstanceTransition(transition: WorkflowInstanceTransition) {
     const validationErrors = await this.validateInstanceTransition(transition);
     if (validationErrors.length <= 0) {
-      await this.persistence.dispatchInstanceEvent(
+      await this.persistence.dispatchTransitionEvent(
         transition.id,
-        persistenceEvents.receivedTransitionAcceptedByRuleService({ id: transition.id, transition })
+        persistenceEvents.receivedTransitionAcceptedByRuleService({
+          id: transition.id,
+          workflowId: transition.workflowId,
+          transition
+        })
       );
     } else {
-      await this.persistence.dispatchInstanceEvent(
+      await this.persistence.dispatchTransitionEvent(
         transition.id,
-        persistenceEvents.receivedTransitionRejectedByRuleService({ id: transition.id, transition, validationErrors })
+        persistenceEvents.receivedTransitionRejectedByRuleService({
+          id: transition.id,
+          workflowId: transition.workflowId,
+          transition,
+          validationErrors
+        })
       );
     }
   }

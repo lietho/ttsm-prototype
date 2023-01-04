@@ -7,7 +7,7 @@ import {
   Workflow,
   WorkflowInstance,
   WorkflowInstanceProposal,
-  WorkflowInstanceTransition,
+  WorkflowInstanceTransition, WorkflowInstanceTransitionContext,
   WorkflowProposal
 } from "src/workflow";
 import {
@@ -66,6 +66,10 @@ export class EventStoreStrategy implements PersistenceStrategy, OnModuleInit, On
     return await this.appendToStream(`instances.${id}`, event);
   }
 
+  async dispatchTransitionEvent<T extends WorkflowInstanceTransitionContext>(id: string, event: PersistenceEvent<T>): Promise<void> {
+    return await this.appendToStream(`instances.${id}`, event);
+  }
+
   async advanceWorkflowInstanceState(transition: WorkflowInstanceTransition): Promise<void> {
     await this.appendToStream(`instances.${transition.id}`, eventTypes.advanceWorkflowInstance(transition));
   }
@@ -108,7 +112,7 @@ export class EventStoreStrategy implements PersistenceStrategy, OnModuleInit, On
     }
   }
 
-  async getWorkflowInstanceStateAt(id: string, at: Date): Promise<WorkflowInstance | null> {
+  async getWorkflowInstanceStateAt(workflowId: string, id: string, at: Date): Promise<WorkflowInstance | null> {
     const eventStream = await this.readStream(`instances.${id}`);
     try {
       const events = [];
@@ -125,7 +129,7 @@ export class EventStoreStrategy implements PersistenceStrategy, OnModuleInit, On
     }
   }
 
-  async getWorkflowInstanceStateTransitionPayloadsUntil(id: string, until: Date): Promise<StateTransition[] | null> {
+  async getWorkflowInstanceStateTransitionPayloadsUntil(workflowId: string, id: string, until: Date): Promise<StateTransition[] | null> {
     const result: StateTransition[] = [];
     const events = await this.readStream(`instances.${id}`);
     try {

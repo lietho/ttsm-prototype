@@ -1,11 +1,13 @@
-import { PersistenceEvent } from "../utils";
 import {
   Workflow,
   WorkflowInstance,
+  WorkflowInstanceContext,
   WorkflowInstanceProposal,
   WorkflowInstanceTransition,
+  WorkflowInstanceTransitionContext,
   WorkflowProposal
 } from "src/workflow";
+import { PersistenceEvent } from "../utils";
 
 export type StateTransition = { event: string, timestamp: string, payload: any };
 
@@ -14,7 +16,7 @@ export interface PersistenceStrategy {
    * Proposes a new workflow to all participants.
    * @param proposal
    */
-  proposeWorkflow(proposal: Omit<WorkflowProposal, "consistencyId">): Promise<Workflow>;
+  proposeWorkflow(proposal: Omit<WorkflowProposal, "consistencyId" | "id">): Promise<Workflow>;
 
   /**
    * Dispatches a workflow specification event.
@@ -27,14 +29,21 @@ export interface PersistenceStrategy {
    * Launches a new instances of a certain workflow.
    * @param proposal
    */
-  launchWorkflowInstance(proposal: Omit<WorkflowInstanceProposal, "consistencyId">): Promise<WorkflowInstance>;
+  launchWorkflowInstance(proposal: Omit<WorkflowInstanceProposal, "consistencyId" | "id">): Promise<WorkflowInstance>;
 
   /**
    * Dispatches a workflow instance event.
    * @param id Workflow instance ID.
    * @param event Event to be dispatched.
    */
-  dispatchInstanceEvent<T>(id: string, event: PersistenceEvent<T>): Promise<void>;
+  dispatchInstanceEvent<T extends WorkflowInstanceContext>(id: string, event: PersistenceEvent<T>): Promise<void>;
+
+  /**
+   * Dispatches a workflow instance transition event.
+   * @param id Workflow instance ID.
+   * @param event Event to be dispatched.
+   */
+  dispatchTransitionEvent<T extends WorkflowInstanceTransitionContext>(id: string, event: PersistenceEvent<T>): Promise<void>;
 
   /**
    * Advances the state of a specific workflow instance.
@@ -61,20 +70,22 @@ export interface PersistenceStrategy {
 
   /**
    * Returns the workflow instance with the given ID.
+   * @param workflowId Workflow ID.
    * @param id Workflow instance ID.
    */
-  getWorkflowInstanceById(id: string): Promise<WorkflowInstance>;
+  getWorkflowInstanceById(workflowId: string, id: string): Promise<WorkflowInstance>;
 
   getWorkflowStateAt(id: string, at: Date): Promise<Workflow | null>;
 
-  getWorkflowInstanceStateAt(id: string, at: Date): Promise<WorkflowInstance | null>;
+  getWorkflowInstanceStateAt(workflowId: string, id: string, at: Date): Promise<WorkflowInstance | null>;
 
   /**
    * Returns all payloads attached to state transitions until the given point in time.
+   * @param workflowId Workflow ID.
    * @param id Workflow instance ID.
    * @param until Point in time until which should be search.
    */
-  getWorkflowInstanceStateTransitionPayloadsUntil(id: string, until: Date): Promise<StateTransition[] | null>;
+  getWorkflowInstanceStateTransitionPayloadsUntil(workflowId: string, id: string, until: Date): Promise<StateTransition[] | null>;
 
   /**
    * Subscribes to ALL events emitted in the event store. This is a volatile subscription which means

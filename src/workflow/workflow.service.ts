@@ -67,7 +67,7 @@ export class WorkflowService {
     const workflow = await this.persistence.getWorkflowById(workflowId);
     if (workflow == null) throw new NotFoundException(`Workflow with ID "${workflowId}" does not exist`);
 
-    const workflowInstance = await this.persistence.getWorkflowInstanceById(instanceId);
+    const workflowInstance = await this.persistence.getWorkflowInstanceById(workflowId, instanceId);
     if (workflowInstance == null) throw new NotFoundException(`Instance with ID "${instanceId}" does not exist for workflow "${workflowId}"`);
 
     const stateMachine = createMachine(workflow.workflowModel);
@@ -92,6 +92,7 @@ export class WorkflowService {
 
     await this.persistence.advanceWorkflowInstanceState({
       id: instanceId,
+      workflowId: workflowId,
       from: previousState,
       to: workflowInstance.currentState,
       event: transition.event,
@@ -106,8 +107,8 @@ export class WorkflowService {
     return state;
   }
 
-  async getWorkflowInstanceStateAt(id: string, at: Date) {
-    const state = await this.persistence.getWorkflowInstanceStateAt(id, at);
+  async getWorkflowInstanceStateAt(workflowId: string, id: string, at: Date) {
+    const state = await this.persistence.getWorkflowInstanceStateAt(workflowId, id, at);
     if (state == null) throw new NotFoundException(`Workflow instance "${id}" did not exist at ${at.toISOString()}`);
     return state;
   }
@@ -117,8 +118,8 @@ export class WorkflowService {
    * @param id Workflow instance ID.
    * @param until Point in time until which should be search.
    */
-  async getWorkflowInstanceStateTransitionPayloadsUntil(id: string, until: Date) {
-    const result = await this.persistence.getWorkflowInstanceStateTransitionPayloadsUntil(id, until);
+  async getWorkflowInstanceStateTransitionPayloadsUntil(workflowId: string, id: string, until: Date) {
+    const result = await this.persistence.getWorkflowInstanceStateTransitionPayloadsUntil(workflowId, id, until);
     if (result == null) throw new NotFoundException(`Workflow instance "${id}" did not exist at ${until.toISOString()}`);
     return result;
   }
@@ -148,7 +149,7 @@ export class WorkflowService {
   async getWorkflowInstance(workflowId: string, instanceId: string) {
     const workflow = await this.persistence.getWorkflowById(workflowId);
     if (workflow == null) throw new NotFoundException(`Workflow with ID "${workflowId}" does not exist`);
-    const instance = await this.persistence.getWorkflowInstanceById(instanceId);
+    const instance = await this.persistence.getWorkflowInstanceById(workflowId, instanceId);
     if (instance == null) throw new NotFoundException(`Workflow instance with ID "${instanceId}" does not exist on workflow "${workflowId}"`);
     return instance;
   }

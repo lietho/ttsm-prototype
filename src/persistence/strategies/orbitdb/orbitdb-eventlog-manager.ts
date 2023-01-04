@@ -1,5 +1,6 @@
-import { map, merge, Observable, Subject, switchMap } from "rxjs";
+import { BehaviorSubject, map, merge, Observable, Subject, switchMap } from "rxjs";
 import { EventStore } from "orbit-db-eventstore";
+import { tap } from "rxjs/operators";
 import { environment } from "src/environment";
 import { importDynamic } from "src/persistence/strategies/orbitdb/util/import-dynamic";
 import { EventNotifier } from "./util";
@@ -16,7 +17,7 @@ export class OrbitDBEventLogManager<T> {
 
   private readonly connections = new Map<string, Connection<T>>();
 
-  private readonly connectionSubject = new Subject<void>();
+  private readonly connectionSubject = new BehaviorSubject<void>(null);
 
   public readonly all$: Observable<T> = this.connectionSubject.pipe(
     map(() => this.getConnections().map(name => this.getObservable(name))),

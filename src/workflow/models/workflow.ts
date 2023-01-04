@@ -8,7 +8,11 @@ import { RuleServiceValidationError } from '../../rules';
  */
 export type WorkflowStatus = 'PENDING' | 'ACCEPTED' | 'REJECTED';
 
-export interface Workflow extends ConsistencyEntity {
+export interface WorkflowContext {
+  id: string;
+}
+
+export interface Workflow extends ConsistencyEntity, WorkflowContext {
   config?: Partial<WorkflowConfig>;
   workflowModel: MachineConfig<any, any, any>;
   acceptedByRuleServices?: boolean;

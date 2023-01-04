@@ -1,5 +1,6 @@
 import * as eventTypes from "src/persistence/persistence.events";
-import { PersistenceEvent, PersistenceEventFactory } from "src/persistence/utils/create-persistence-event";
+import { PersistenceEvent, } from "./create-persistence-event";
+import { handleEvent } from "./handle-event";
 import { Workflow, WorkflowProposalParticipantApproval, WorkflowProposalParticipantDenial } from "src/workflow";
 
 export function aggregateWorkflowEvents(events: PersistenceEvent<unknown>[]): Workflow {
@@ -48,12 +49,4 @@ export function aggregateAllWorkflowEvents(events: PersistenceEvent<unknown>[]):
 
     return result;
   }, {} as Record<string, Workflow>);
-}
-
-function handleEvent<T>(eventFactory: PersistenceEventFactory<T>, event: PersistenceEvent<unknown>, callback: (event: PersistenceEvent<T>) => void) {
-  const eventType = event?.type;
-
-  if (eventFactory.sameAs(eventType)) {
-    callback(event as PersistenceEvent<T>);
-  }
 }

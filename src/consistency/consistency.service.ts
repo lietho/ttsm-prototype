@@ -81,13 +81,18 @@ export class ConsistencyService implements ConsistencyStrategy, OnModuleInit {
 
       if (persistenceEvents.receivedWorkflowInstanceAcceptedByRuleService.sameAs(eventType)) {
         const approval = eventData as WorkflowInstanceRuleServiceApproval;
-        await this.dispatch(consistencyEvents.acceptWorkflowInstance({ id: approval.id, proposal: approval.proposal }));
+        await this.dispatch(consistencyEvents.acceptWorkflowInstance({
+          id: approval.id,
+          workflowId: approval.proposal.workflowId,
+          proposal: approval.proposal
+        }));
       }
 
       if (persistenceEvents.receivedWorkflowInstanceRejectedByRuleService.sameAs(eventType)) {
         const denial = eventData as WorkflowInstanceRuleServiceDenial;
         await this.dispatch(consistencyEvents.rejectWorkflowInstance({
           id: denial.id,
+          workflowId: denial.proposal.workflowId,
           proposal: denial.proposal,
           reasons: denial.validationErrors.map((curr) => curr.reason)
         }));
@@ -101,13 +106,18 @@ export class ConsistencyService implements ConsistencyStrategy, OnModuleInit {
 
       if (persistenceEvents.receivedTransitionAcceptedByRuleService.sameAs(eventType)) {
         const approval = eventData as WorkflowInstanceTransitionRuleServiceApproval;
-        await this.dispatch(consistencyEvents.acceptTransition({ id: approval.id, transition: approval.transition }));
+        await this.dispatch(consistencyEvents.acceptTransition({
+          id: approval.id,
+          workflowId: approval.workflowId,
+          transition: approval.transition
+        }));
       }
 
       if (persistenceEvents.receivedTransitionRejectedByRuleService.sameAs(eventType)) {
         const denial = eventData as WorkflowInstanceTransitionRuleServiceDenial;
         await this.dispatch(consistencyEvents.rejectTransition({
           id: denial.id,
+          workflowId: denial.workflowId,
           transition: denial.transition,
           reasons: denial.validationErrors.map((curr) => curr.reason)
         }));
@@ -224,10 +234,11 @@ export class ConsistencyService implements ConsistencyStrategy, OnModuleInit {
    * @private
    */
   private async onAdvanceExternalWorkflowInstance(transition: WorkflowInstanceTransition, commitmentReference: string) {
-    const workflowInstance = await this.persistence.getWorkflowInstanceById(transition.id);
+    const workflowInstance = await this.persistence.getWorkflowInstanceById(transition.workflowId, transition.id);
     if (workflowInstance == null) {
       return this.dispatch(consistencyEvents.rejectTransition({
         id: transition.id,
+        workflowId: transition.workflowId,
         transition: transition,
         commitmentReference,
         reasons: [`Instance with ID "${transition.id}" does not exist`]
@@ -238,13 +249,14 @@ export class ConsistencyService implements ConsistencyStrategy, OnModuleInit {
     if (workflow == null) {
       return this.dispatch(consistencyEvents.rejectTransition({
         id: transition.id,
+        workflowId: transition.workflowId,
         transition: transition,
         commitmentReference,
         reasons: [`Workflow with ID "${workflowInstance.workflowId}" does not exist`]
       }));
     }
 
-    await this.persistence.dispatchInstanceEvent(transition.id, persistenceEvents.receivedTransition({ ...transition, commitmentReference }));
+    await this.persistence.dispatchTransitionEvent(transition.id, persistenceEvents.receivedTransition({ ...transition, commitmentReference }));
   }
 
   /**
@@ -254,9 +266,9 @@ export class ConsistencyService implements ConsistencyStrategy, OnModuleInit {
    * @private
    */
   private async onParticipantAcceptedTransition(approval: WorkflowInstanceTransitionParticipantApproval, commitmentReference: string) {
-    await this.persistence.dispatchInstanceEvent(approval.id, persistenceEvents.transitionAcceptedByParticipant({ ...approval, commitmentReference }));
+    await this.persistence.dispatchTransitionEvent(approval.id, persistenceEvents.transitionAcceptedByParticipant({ ...approval, commitmentReference }));
     // Dispatch the follow up event if ALL required parties accepted
-    await this.persistence.dispatchInstanceEvent(approval.id, persistenceEvents.transitionAccepted({ ...approval, commitmentReference }));
+    await this.persistence.dispatchTransitionEvent(approval.id, persistenceEvents.transitionAccepted({ ...approval, commitmentReference }));
   }
 
   /**
@@ -266,9 +278,9 @@ export class ConsistencyService implements ConsistencyStrategy, OnModuleInit {
    * @private
    */
   private async onParticipantRejectedTransition(denial: WorkflowInstanceTransitionParticipantDenial, commitmentReference: string) {
-    await this.persistence.dispatchInstanceEvent(denial.id, persistenceEvents.transitionRejectedByParticipant({ ...denial, commitmentReference }));
+    await this.persistence.dispatchTransitionEvent(denial.id, persistenceEvents.transitionRejectedByParticipant({ ...denial, commitmentReference }));
     // Dispatch the follow up event if ANY of the parties rejected
-    await this.persistence.dispatchInstanceEvent(denial.id, persistenceEvents.transitionRejected({ ...denial, commitmentReference }));
+    await this.persistence.dispatchTransitionEvent(denial.id, persistenceEvents.transitionRejected({ ...denial, commitmentReference }));
   }
 
   /** @inheritDoc */

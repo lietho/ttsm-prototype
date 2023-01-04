@@ -151,7 +151,7 @@ export class WorkflowController {
                             @Query('until') timestamp?: string) {
     const until = new Date(timestamp);
     if (!isNaN(until.getTime())) {
-      return renameConsistencyId(await this.workflowService.getWorkflowInstanceStateAt(instanceId, until));
+      return renameConsistencyId(await this.workflowService.getWorkflowInstanceStateAt(workflowId, instanceId, until));
     }
     return renameConsistencyId(await this.workflowService.getWorkflowInstance(workflowId, instanceId));
   }
@@ -188,7 +188,7 @@ export class WorkflowController {
                                                         @Param('instanceId') instanceId: string,
                                                         @Query('until') timestamp?: string) {
     const until = new Date(timestamp ?? Date.now());
-    return await this.workflowService.getWorkflowInstanceStateTransitionPayloadsUntil(instanceId, until);
+    return await this.workflowService.getWorkflowInstanceStateTransitionPayloadsUntil(workflowId, instanceId, until);
   }
 
   @Get(':workflowId/instances')

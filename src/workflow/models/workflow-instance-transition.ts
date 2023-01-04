@@ -1,7 +1,12 @@
 import { EventData, State, StateValue } from 'xstate';
 import { RuleServiceValidationError } from '../../rules';
 
-export interface WorkflowInstanceTransition {
+export interface WorkflowInstanceTransitionContext {
+  workflowId: string;
+  id: string;
+}
+
+export interface WorkflowInstanceTransition extends WorkflowInstanceTransitionContext {
   id: string;
   from: StateValue | State<any, any>;
   to: StateValue | State<any, any>;
@@ -10,24 +15,24 @@ export interface WorkflowInstanceTransition {
   commitmentReference?: string;
 }
 
-export interface WorkflowInstanceTransitionRuleServiceApproval {
+export interface WorkflowInstanceTransitionRuleServiceApproval extends WorkflowInstanceTransitionContext {
   id: string;
   transition: WorkflowInstanceTransition;
 }
 
-export interface WorkflowInstanceTransitionRuleServiceDenial {
+export interface WorkflowInstanceTransitionRuleServiceDenial extends WorkflowInstanceTransitionContext {
   id: string;
   transition: WorkflowInstanceTransition;
   validationErrors: RuleServiceValidationError[];
 }
 
-export interface WorkflowInstanceTransitionParticipantApproval {
+export interface WorkflowInstanceTransitionParticipantApproval extends WorkflowInstanceTransitionContext {
   id: string;
   transition: WorkflowInstanceTransition;
   commitmentReference?: string;
 }
 
-export interface WorkflowInstanceTransitionParticipantDenial {
+export interface WorkflowInstanceTransitionParticipantDenial extends WorkflowInstanceTransitionContext {
   id: string;
   transition: WorkflowInstanceTransition;
   commitmentReference?: string;

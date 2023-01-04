@@ -8,13 +8,18 @@ import { WorkflowInstanceTransitionParticipantApproval, WorkflowInstanceTransiti
  */
 export type WorkflowInstanceStatus = 'PENDING' | 'ACCEPTED' | 'REJECTED';
 
-export interface WorkflowInstance extends ConsistencyEntity {
+export interface WorkflowInstanceContext {
+  workflowId: string;
+  id: string;
+}
+
+export interface WorkflowInstance extends ConsistencyEntity, WorkflowInstanceContext {
   workflowId: string;
   currentState?: StateValue | State<any, any>;
   acceptedByRuleServices?: boolean;
   acceptedByParticipants?: boolean;
-  participantsAccepted?: WorkflowInstanceTransitionParticipantApproval[] | WorkflowInstanceParticipantApproval[];
-  participantsRejected?: WorkflowInstanceTransitionParticipantDenial[] | WorkflowInstanceParticipantDenial[];
+  participantsAccepted?: (WorkflowInstanceTransitionParticipantApproval | WorkflowInstanceParticipantApproval)[];
+  participantsRejected?: (WorkflowInstanceTransitionParticipantDenial | WorkflowInstanceParticipantDenial)[];
 }
 
 /**
@@ -22,24 +27,25 @@ export interface WorkflowInstance extends ConsistencyEntity {
  */
 export type WorkflowInstanceProposal = Omit<WorkflowInstance, 'status'>;
 
-export interface WorkflowInstanceRuleServiceApproval {
+export interface WorkflowInstanceRuleServiceApproval extends WorkflowInstanceContext {
   id: string;
+  workflowId: string;
   proposal: WorkflowInstanceProposal;
 }
 
-export interface WorkflowInstanceRuleServiceDenial {
+export interface WorkflowInstanceRuleServiceDenial extends WorkflowInstanceContext {
   id: string;
   proposal: WorkflowInstanceProposal;
   validationErrors: RuleServiceValidationError[];
 }
 
-export interface WorkflowInstanceParticipantApproval {
+export interface WorkflowInstanceParticipantApproval extends WorkflowInstanceContext {
   id: string;
   commitmentReference?: string;
   proposal: WorkflowInstanceProposal;
 }
 
-export interface WorkflowInstanceParticipantDenial {
+export interface WorkflowInstanceParticipantDenial extends WorkflowInstanceContext {
   id: string;
   commitmentReference?: string;
   proposal: WorkflowInstanceProposal;
