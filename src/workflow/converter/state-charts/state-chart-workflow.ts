@@ -1,3 +1,3 @@
-import { MachineConfig } from 'xstate';
+import { WorkflowDefinitionDto } from "src/workflow/dto/workflow-definition-dto";
 
-export type StateChartWorkflow = MachineConfig<any, any, any>;
+export type StateChartWorkflow = WorkflowDefinitionDto;

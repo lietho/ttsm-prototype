@@ -88,9 +88,8 @@ export class WorkflowController {
     description: 'The workflow with the given ID does not exist'
   })
   @ApiTags('Workflow Instances')
-  async launchWorkflowInstance(@Param('id') workflowId: string,
-                               @Body() instanceConfig?: WorkflowInstanceDto) {
-    return renameConsistencyId(await this.workflowService.launchWorkflowInstance(workflowId, instanceConfig));
+  async launchWorkflowInstance(@Param('id') workflowId: string) {
+    return renameConsistencyId(await this.workflowService.launchWorkflowInstance(workflowId));
   }
 
   @Post(':workflowId/instances/:instanceId/advance')

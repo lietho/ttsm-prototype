@@ -1,5 +1,5 @@
 import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
-import { createMachine, interpret, MachineConfig, State } from 'xstate';
+import { createMachine, interpret, Interpreter, MachineConfig, State } from "xstate";
 
 import { SupportedWorkflowConfig, SupportedWorkflowModels, WorkflowInstanceDto, WorkflowInstanceTransitionDto } from './models';
 
@@ -26,11 +26,13 @@ export class WorkflowService {
    * @param config
    */
   async proposeWorkflow(workflow: SupportedWorkflowModels, config?: SupportedWorkflowConfig) {
-    let workflowModel: MachineConfig<any, any, any>;
+    let workflowModel: SupportedWorkflowModels;
     const workflowModelType = config?.type ?? 'STATE_CHARTS';
     switch (workflowModelType) {
       case 'STATE_CHARTS':
-        workflowModel = convertStateChartWorkflowConfig(workflow as StateChartWorkflow, config);
+        // convert to check validity and convertability of the supplied workflow definition
+        convertStateChartWorkflowConfig(workflow, config);
+        workflowModel = workflow;
         break;
       default:
         throw new BadRequestException(`Workflow model type "${workflowModelType}" it not supported. Only raw state charts are supported right now.`);
@@ -46,14 +48,16 @@ export class WorkflowService {
   /**
    * Launches a new instance of a given workflow if the workflow has been accepted.
    * @param workflowId
-   * @param instanceConfig
    */
-  async launchWorkflowInstance(workflowId: string, instanceConfig?: WorkflowInstanceDto) {
+  async launchWorkflowInstance(workflowId: string) {
     const workflow = await this.persistence.getWorkflowById(workflowId);
     if (workflow == null) throw new NotFoundException(`Workflow with ID "${workflowId}" does not exist`);
+
+    const service = this.getWorkflowStateMachine(workflow.workflowModel, workflow.config);
+
     return await this.persistence.launchWorkflowInstance({
       workflowId,
-      currentState: instanceConfig?.initialState
+      currentState: service.initialState
     });
   }
 
@@ -70,11 +74,11 @@ export class WorkflowService {
     const workflowInstance = await this.persistence.getWorkflowInstanceById(workflowId, instanceId);
     if (workflowInstance == null) throw new NotFoundException(`Instance with ID "${instanceId}" does not exist for workflow "${workflowId}"`);
 
-    const stateMachine = createMachine(workflow.workflowModel);
-    const previousState = workflowInstance.currentState == null ? stateMachine.initialState : State.create(workflowInstance.currentState as any) as any;
+    let previousState;
 
     try {
-      const service = interpret(stateMachine);
+      const service = this.getWorkflowStateMachine(workflow.workflowModel, workflow.config);
+      previousState = workflowInstance.currentState == null ? service.initialState : State.create(workflowInstance.currentState as any) as any;
       service.start(previousState);
 
       // The commitment reference is no longer relevant for this new transition. It will be replaced later on.
@@ -83,7 +87,7 @@ export class WorkflowService {
       delete workflowInstance.acceptedByParticipants;
       workflowInstance.participantsAccepted = [];
       workflowInstance.participantsRejected = [];
-      workflowInstance.currentState = service.send(transition.event, transition.payload) as any;
+      workflowInstance.currentState = service.send(transition.event, {payload: transition.payload }) as any;
       service.stop();
     } catch (e) {
       this.logger.warn(`Could not perform state transition`, e);
@@ -160,5 +164,12 @@ export class WorkflowService {
    */
   async getWorkflowInstancesOfWorkflow(workflowId: string) {
     return await this.persistence.getWorkflowInstancesOfWorkflow(workflowId);
+  }
+
+  private getWorkflowStateMachine(workflowModel: SupportedWorkflowModels, config?: SupportedWorkflowConfig): Interpreter<any, any, any, any, any> {
+    const workflowStateChart = convertStateChartWorkflowConfig(workflowModel, config);
+    const stateMachine = createMachine(workflowStateChart);
+
+    return interpret(stateMachine);
   }
 }

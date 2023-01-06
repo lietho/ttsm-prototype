@@ -1,4 +1,4 @@
-import { MachineConfig } from 'xstate';
+import { SupportedWorkflowModels } from "src/workflow/models/workflow.dto";
 import { WorkflowConfig } from './workflow-config';
 import { ConsistencyEntity } from '../../consistency';
 import { RuleServiceValidationError } from '../../rules';
@@ -14,7 +14,7 @@ export interface WorkflowContext {
 
 export interface Workflow extends ConsistencyEntity, WorkflowContext {
   config?: Partial<WorkflowConfig>;
-  workflowModel: MachineConfig<any, any, any>;
+  workflowModel: SupportedWorkflowModels;
   acceptedByRuleServices?: boolean;
   acceptedByParticipants?: boolean;
   participantsAccepted?: WorkflowProposalParticipantApproval[];

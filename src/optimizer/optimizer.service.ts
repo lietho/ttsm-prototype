@@ -1,5 +1,5 @@
 import { BadRequestException, Injectable, Logger } from '@nestjs/common';
-import { MachineConfig } from 'xstate';
+import { StateChartWorkflow } from "src/workflow/converter";
 import { noopOptimizer, Optimizer } from './strategies';
 
 export type SupportedOptimizer = 'noop' | 'nakamura';
@@ -20,7 +20,7 @@ export class OptimizerService {
    * @param workflowModel Workflow model to optimize.
    * @param optimizer Name of optimizer to apply, true if all optimizers should be applied and false if none.
    */
-  optimize(workflowModel: MachineConfig<any, any, any>, optimizer: SupportedOptimizer[] | boolean): MachineConfig<any, any, any> {
+  optimize(workflowModel: StateChartWorkflow, optimizer: SupportedOptimizer[] | boolean): StateChartWorkflow {
     // If false, no optimizers should be applied to the workflow model
     if (optimizer === false || optimizer == null) {
       return workflowModel;
