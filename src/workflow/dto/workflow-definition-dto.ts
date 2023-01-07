@@ -14,7 +14,7 @@ export interface StateObject {
 
 export interface EventObject {
   target: string;
-  schema?: string; // TODO: JSON Schema
+  schema?: object; // TODO: JSON Schema
   assign?: ObjectDefinition; // lightweight JSON Schema format, traversed, all values have to be JSON Path expressions and then assigned to context
 }
 
@@ -24,9 +24,9 @@ export interface ExternalParticipant {
   workflowId: string; // valid values: JSON Path or UUIDv4
   workflowInstanceId?: string; // valid values: JSON Path or UUIDv4 or undefined
   payload?: ObjectDefinition;
-  acceptanceSchema?: string;
+  acceptanceSchema?: object;
   assignOnAcceptance?: ObjectDefinition;
-  rejectionSchema?: string;
+  rejectionSchema?: object;
   assignOnRejection?: ObjectDefinition;
 }
 

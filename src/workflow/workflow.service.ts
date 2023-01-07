@@ -68,6 +68,14 @@ export class WorkflowService {
    * @param transition
    */
   async advanceWorkflowInstance(workflowId: string, instanceId: string, transition: WorkflowInstanceTransitionDto) {
+    if (transition.event.includes(".")) {
+      throw new BadRequestException("Invoking child events is not allowed!");
+    }
+
+    if (transition.event.startsWith("$")) {
+      throw new BadRequestException("Invoking internal events is not allowed!");
+    }
+
     const workflow = await this.persistence.getWorkflowById(workflowId);
     if (workflow == null) throw new NotFoundException(`Workflow with ID "${workflowId}" does not exist`);
 
