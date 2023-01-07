@@ -169,10 +169,8 @@
 ### Advance Workflow Instance
 ![AdvanceWorkflowInstanceEventFlow_Old.png](AdvanceWorkflowInstanceEventFlow_Old.png)
 
-## Data Flow Refactored (v1)
-**Version 1:**
-* without local participants / peers
-* without external events
+## Data Flow Refactored (v2)
+**Version 2:**
 * without Zeebe integration
 
 ### Create Workflow
