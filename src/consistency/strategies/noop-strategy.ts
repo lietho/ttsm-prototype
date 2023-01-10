@@ -36,4 +36,8 @@ export class NoopStrategy implements ConsistencyStrategy {
   async getStatus(): Promise<Status> {
     return 'OK' as Status;
   }
+
+  getOrganizationIdentifier(): string {
+    throw new Error("Method not implemented.");
+  }
 }

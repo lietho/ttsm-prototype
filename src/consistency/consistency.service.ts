@@ -7,6 +7,7 @@ import { PersistenceService } from "../persistence";
 import * as persistenceEvents from "../persistence/persistence.events";
 import {
   ExternalWorkflowInstanceTransition,
+  OriginatingParticipant,
   SupportedWorkflowModels,
   WorkflowInstanceParticipantApproval,
   WorkflowInstanceParticipantDenial,
@@ -42,7 +43,7 @@ export const CONSISTENCY_STRATEGY_PROVIDER_TOKEN = "CONSISTENCY_STRATEGY";
  * service can be configured in the gateways environment.
  */
 @Injectable()
-export class ConsistencyService implements ConsistencyStrategy, OnModuleInit {
+export class ConsistencyService implements OnModuleInit {
 
   private readonly log = new Logger(ConsistencyService.name);
   readonly actions$: Subject<ConsistencyMessage<unknown>>;
@@ -118,18 +119,20 @@ export class ConsistencyService implements ConsistencyStrategy, OnModuleInit {
 
       if (persistenceEvents.receivedTransitionAcceptedByRuleService.sameAs(eventType)) {
         const approval = eventData as WorkflowInstanceTransitionRuleServiceApproval;
+        const originatingParticipant = approval.transition.originatingExternalTransition.originatingParticipant
         await this.dispatch(consistencyEvents.acceptTransition({
-          id: approval.id,
-          workflowId: approval.workflowId,
+          id: originatingParticipant.workflowInstanceId,
+          workflowId: originatingParticipant.workflowId,
           transition: approval.transition.originatingExternalTransition
         }));
       }
 
       if (persistenceEvents.receivedTransitionRejectedByRuleService.sameAs(eventType)) {
         const denial = eventData as WorkflowInstanceTransitionRuleServiceDenial;
+        const originatingParticipant = denial.transition.originatingExternalTransition.originatingParticipant
         await this.dispatch(consistencyEvents.rejectTransition({
-          id: denial.id,
-          workflowId: denial.workflowId,
+          id: originatingParticipant.workflowInstanceId,
+          workflowId: originatingParticipant.workflowId,
           transition: denial.transition.originatingExternalTransition,
           reasons: denial.validationErrors.map((curr) => curr.reason)
         }));
@@ -215,30 +218,36 @@ export class ConsistencyService implements ConsistencyStrategy, OnModuleInit {
     const jsonPathContext = { context: currentState.context };
 
     return stateDefinition.externalParticipants.map(ep => {
-      const organizationId = UUIDV4_REGEX.test(ep.organizationId)
-        ? ep.organizationId
-        : JSONPath({ path: ep.organizationId, json: jsonPathContext, wrap: false });
+      const organizationId = JSONPath({ path: ep.organizationId, json: jsonPathContext, wrap: false }) ?? ep.organizationId;
 
       const workflowId = UUIDV4_REGEX.test(ep.workflowId)
         ? ep.workflowId
         : JSONPath({ path: ep.workflowId, json: jsonPathContext, wrap: false });
 
-      let workflowInstanceId: string;
+      let instanceId: string;
       if (ep.workflowInstanceId != null) {
-        workflowInstanceId = UUIDV4_REGEX.test(ep.organizationId)
+        instanceId = UUIDV4_REGEX.test(ep.organizationId)
           ? ep.organizationId
-          : JSONPath({ path: ep.organizationId, json: jsonPathContext, wrap: false });
+          : JSONPath({ path: ep.workflowInstanceId, json: jsonPathContext, wrap: false });
       }
 
       const payload = ep.payload != null ? evaluateObjectDefinition(ep.payload, jsonPathContext) : undefined;
 
+      const originatingParticipant = {
+        externalIdentifier: ep.id,
+        organizationId: this.consistencyStrategy.getOrganizationIdentifier(),
+        workflowId: transition.workflowId,
+        workflowInstanceId: transition.id
+      } as OriginatingParticipant;
+
       return {
         organizationId,
         workflowId,
-        workflowInstanceId,
+        instanceId,
         externalIdentifier: ep.id,
         event: ep.event,
-        payload
+        payload,
+        originatingParticipant
       } as ExternalWorkflowInstanceTransition;
     });
   }

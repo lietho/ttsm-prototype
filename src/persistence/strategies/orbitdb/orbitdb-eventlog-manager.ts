@@ -8,7 +8,8 @@ import { EventNotifier } from "./util";
 type Connection<T> = {
   store: EventStore<T>,
   eventNotifier: EventNotifier<T>,
-  localEvents: Subject<T>
+  localEvents: Subject<T>,
+  closeTimerRef?: any
 }
 
 @Injectable()
@@ -25,9 +26,9 @@ export class OrbitDBEventLogManager<T> implements OnModuleInit, OnModuleDestroy 
 
   public readonly managerReady$ = this.managerReadySubject.asObservable();
 
-  public readonly all$: Observable<T> = this.connectionSubject.pipe(
+  public readonly all$: Observable<OrbitDBEvent<T>> = this.connectionSubject.pipe(
     map(() => this.getConnections().map(name => this.getObservable(name))),
-    switchMap((eventObservables: Observable<T>[]) => merge(...eventObservables))
+    switchMap((eventObservables: Observable<OrbitDBEvent<T>>[]) => merge(...eventObservables))
   );
 
   async onModuleInit() {
@@ -84,6 +85,29 @@ export class OrbitDBEventLogManager<T> implements OnModuleInit, OnModuleDestroy 
     this.connections.delete(name);
   }
 
+  public async removeConnectionAfterTimeout(name: string, timeoutMs: number) {
+    if(!this.hasConnection(name)) {
+      throw new Error(`Connection with name "${name}" not found!`);
+    }
+
+    const connection = this.connections.get(name);
+    connection.closeTimerRef = setTimeout(async () => {
+      await this.removeConnection(name);
+    }, timeoutMs);
+  }
+
+  public stopCloseTimeout(name: string) {
+    if(!this.hasConnection(name)) {
+      throw new Error(`Connection with name "${name}" not found!`);
+    }
+
+    const connection = this.connections.get(name);
+    if (connection.closeTimerRef != null) {
+      clearTimeout(connection.closeTimerRef);
+      connection.closeTimerRef = undefined;
+    }
+  }
+
   public getConnections(): string[] {
     return Array.from(this.connections.keys());
   }
@@ -103,13 +127,21 @@ export class OrbitDBEventLogManager<T> implements OnModuleInit, OnModuleDestroy 
     return Promise.resolve(entries.map(e => e.payload.value));
   }
 
-  public getObservable(name: string): Observable<T> {
+  public getObservable(name: string): Observable<OrbitDBEvent<T>> {
     if (!this.hasConnection(name)) {
       throw new Error(`Connection with name "${name}" not found!`);
     }
 
     const connection = this.connections.get(name);
-    return merge(connection.eventNotifier.events$, connection.localEvents);
+    return merge(
+      connection.eventNotifier.events$.pipe(map(event => ({
+        originId: event.identity.id,
+        event: event.payload.value
+      }))),
+      connection.localEvents.pipe(map(event => ({
+        originId: this.identityId,
+        event
+      }))));
   }
 
   public async addEvent(name: string, event: T, propagateLocally = true) {
@@ -145,4 +177,9 @@ export interface OrbitDBConnectionOptions {
   accessController: {
     write: string[]
   }
+}
+
+export interface OrbitDBEvent<T> {
+  event: T;
+  originId: string;
 }

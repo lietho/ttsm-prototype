@@ -142,7 +142,7 @@ export class OrbitDBStrategy implements PersistenceStrategy, OnModuleInit, OnMod
   async subscribeToAll(eventHandler: (eventType: string, eventData: unknown) => void): Promise<void> {
     this.dbManager.all$
       .pipe(takeUntil(this.destroySubject))
-      .subscribe(event => eventHandler(event.type, event.data));
+      .subscribe(({event}) => eventHandler(event.type, event.data));
   }
 
   async onModuleDestroy() {

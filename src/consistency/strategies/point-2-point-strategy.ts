@@ -43,6 +43,10 @@ export class Point2PointStrategy implements ConsistencyStrategy {
       .map(async (url) => await firstValueFrom(this.http.get(url + '/ping')))
     ).then(() => 'OK', () => 'NOK');
   }
+
+  getOrganizationIdentifier(): string {
+    throw new Error("Method not implemented.");
+  }
 }
 
 /**

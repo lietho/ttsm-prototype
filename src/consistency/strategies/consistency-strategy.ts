@@ -1,5 +1,5 @@
-import { Subject } from 'rxjs';
-import { ConsistencyMessage } from '../models';
+import { Subject } from "rxjs";
+import { ConsistencyMessage } from "../models";
 
 export type Status = "OK" | "NOK";
 
@@ -30,4 +30,6 @@ export interface ConsistencyStrategy {
    * @throws GatewayTimeoutException When the required backend services are not reachable.
    */
   dispatch<T>(msg: ConsistencyMessage<T>): Promise<Status>;
+
+  getOrganizationIdentifier(): string;
 }

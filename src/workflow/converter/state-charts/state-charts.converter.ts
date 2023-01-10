@@ -18,7 +18,7 @@ export const EVENT_NAME_EXTERNAL_PARTICIPANT_NACK_PREFIX = "$RECEIVE_NACK_";
 
 export const convertStateChartWorkflowConfig: WorkflowConfigConverter<StateChartWorkflow> = (workflow, config) => {
   const states = transformObject(workflow.states, (stateConfig, stateName) => {
-    const stateTransitions = generateStateTransitions(stateConfig.on);
+    const stateTransitions = generateStateTransitions(stateConfig.on ?? []);
 
     if (stateConfig.external) {
       if (stateConfig.final) {
@@ -131,7 +131,10 @@ function generateValidateAndAssignAction(schema?: object, assign?: ObjectDefinit
       }
 
       if (assign != null) {
-        return deepmerge.default(context, evaluateObjectDefinition(assign, { event: event.payload }));
+        return deepmerge.default(context, evaluateObjectDefinition(assign, {
+          origin: event.origin,
+          event: event.payload
+        }));
       }
     };
   }

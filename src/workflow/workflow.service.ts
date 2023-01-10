@@ -1,4 +1,5 @@
 import { BadRequestException, Injectable, Logger, NotFoundException } from "@nestjs/common";
+import { getCurrentStateDefinition, getCurrentTransitionDefinition } from "src/workflow/utils";
 import { createMachine, interpret, Interpreter, State } from "xstate";
 import { OptimizerService } from "../optimizer";
 import { PersistenceService } from "../persistence";
@@ -7,6 +8,7 @@ import { convertStateChartWorkflowConfig } from "./converter";
 
 import {
   ExternalWorkflowInstanceTransition,
+  OriginatingParticipant,
   SupportedWorkflowConfig,
   SupportedWorkflowModels,
   Workflow,
@@ -75,7 +77,7 @@ export class WorkflowService {
    * @param instanceId
    * @param transition
    */
-  async advanceWorkflowInstance(workflowId: string, instanceId: string, transition: WorkflowInstanceTransitionDto, externalIncomingTransition?: ExternalWorkflowInstanceTransition) {
+  async advanceWorkflowInstance(workflowId: string, instanceId: string, transition: WorkflowInstanceTransitionDto) {
     const workflow = await this.persistence.getWorkflowById(workflowId);
     if (workflow == null) throw new NotFoundException(`Workflow with ID "${workflowId}" does not exist`);
 
@@ -84,10 +86,7 @@ export class WorkflowService {
 
     const { previousState, currentState } = this.internalAdvanceWorkflowInstance(workflow, workflowInstance, transition);
 
-    const currentStateName = Object.keys(currentState.value)[0];
-    const stateDefinition = workflow.workflowModel.states[currentStateName];
-
-    const transitionDefinition = stateDefinition.on[transition.event];
+    const transitionDefinition = getCurrentTransitionDefinition(previousState, transition.event, workflow.workflowModel);
 
     if (typeof(transitionDefinition) !== "string" && transitionDefinition.external) {
       throw new Error("This event is expected to be triggered by an external service! Triggering an external event locally is not possible.");
@@ -102,7 +101,8 @@ export class WorkflowService {
       payload: transition.payload
     } as WorkflowInstanceTransition);
 
-    return workflowInstance;
+    const updatedWorkflowInstance = await this.persistence.getWorkflowInstanceById(workflowId, instanceId);
+    return updatedWorkflowInstance;
   }
 
   /**
@@ -120,18 +120,14 @@ export class WorkflowService {
       return transition;
     }
 
-    const currentStateBefore = workflowInstance.currentState;
-    const currentStateNameBefore = Object.keys(currentStateBefore.value)[0];
-    const stateDefinitionBefore = workflow.workflowModel.states[currentStateNameBefore];
-
-    const transitionDefinitionBefore = stateDefinitionBefore.on[transition.event];
+    const transitionDefinitionBefore = getCurrentTransitionDefinition(workflowInstance.currentState, transition.event, workflow.workflowModel);
 
     if (transitionDefinitionBefore == null || typeof(transitionDefinitionBefore) !== "string" && !transitionDefinitionBefore.external) {
       // send rejection message back to originator
       throw new Error("The current state doesn't expect any external events!");
     }
 
-    const { previousState, currentState } = this.internalAdvanceWorkflowInstance(workflow, workflowInstance, transition);
+    const { previousState, currentState } = this.internalAdvanceWorkflowInstance(workflow, workflowInstance, transition, externalIncomingTransition.originatingParticipant);
 
     await this.persistence.advanceWorkflowInstanceState({
       id: workflowInstance.id,
@@ -160,16 +156,13 @@ export class WorkflowService {
     const workflowInstance = await this.persistence.getWorkflowInstanceById(workflowId, instanceId);
     if (workflowInstance == null) throw new NotFoundException(`Instance with ID "${instanceId}" does not exist for workflow "${workflowId}"`);
 
-    const { previousState, currentState } = this.internalAdvanceWorkflowInstance(workflow, workflowInstance, transition);
+    const stateDefinition = getCurrentStateDefinition(workflowInstance.currentState, workflow.workflowModel);
 
-    const currentStateName = Object.keys(currentState.value)[0];
-    const stateDefinition = workflow.workflowModel.states[currentStateName];
-
-    const transitionDefinition = stateDefinition.on[transition.event];
-
-    if (typeof(transitionDefinition) !== "string" && !transitionDefinition.external) {
+    if (!stateDefinition.external) {
       throw new Error("External acknowledgements can only be accepted on external events!");
     }
+
+    const { previousState, currentState } = this.internalAdvanceWorkflowInstance(workflow, workflowInstance, transition);
 
     await this.persistence.advanceWorkflowInstanceState({
       id: instanceId,
@@ -181,13 +174,16 @@ export class WorkflowService {
     } as WorkflowInstanceTransition);
   }
 
-  private internalAdvanceWorkflowInstance(workflow: Workflow, workflowInstance: WorkflowInstance, transition: WorkflowInstanceTransitionDto): TransitionResult {
+  private internalAdvanceWorkflowInstance(workflow: Workflow, workflowInstance: WorkflowInstance, transition: WorkflowInstanceTransitionDto, originatingParticipant?: OriginatingParticipant): TransitionResult {
     try {
       const service = this.getWorkflowStateMachine(workflow.workflowModel, workflow.config);
       const previousState = workflowInstance.currentState == null ? service.initialState : State.create(workflowInstance.currentState as any) as State<any, any>;
 
       service.start(previousState);
-      const currentState = service.send(transition.event, { payload: transition.payload }) as State<any, any>;
+      const currentState = service.send(transition.event, {
+        origin: originatingParticipant,
+        payload: transition.payload
+      }) as State<any, any>;
       service.stop();
 
       return { previousState, currentState } as TransitionResult;
