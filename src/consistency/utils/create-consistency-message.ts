@@ -1,4 +1,4 @@
-import { ConsistencyMessage } from '../models';
+import { ConsistencyMessage } from "../models";
 
 /**
  * The actions message factory. Creates a new message when called and
@@ -12,6 +12,13 @@ export interface ConsistencyMessageFactory<T> {
   (payload: T): ConsistencyMessage<T>;
 
   /**
+   * Returns true if this message type and the given one are the same. Either accepts a {@link ConsistencyMessage} or
+   * a plain string as message type.
+   * @param eventType Consistency message type.
+   */
+  sameAs: <S>(msgType: ConsistencyMessage<S> | string) => boolean;
+
+  /**
    * Message type.
    */
   type: string;
@@ -22,5 +29,8 @@ export interface ConsistencyMessageFactory<T> {
  * @param type Action type.
  */
 export function createConsistencyMessage<T>(type: string): ConsistencyMessageFactory<T> {
-  return Object.assign((payload: T): ConsistencyMessage<T> => ({ type, payload }), { type });
+  return Object.assign((payload: T): ConsistencyMessage<T> => ({ type, payload }), {
+    type,
+    sameAs: <S>(msgType: ConsistencyMessage<S> | string) => (msgType as ConsistencyMessage<S>)?.type === type || (msgType as string) === type
+  });
 }

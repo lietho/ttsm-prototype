@@ -1,8 +1,8 @@
+import { SupportedConsistencyStrategies } from "./consistency";
 import { SupportedPersistenceStrategies } from "./persistence";
-import { SupportedConsistencyStrategies } from './consistency';
 
 export const environment = {
-  servicePort: 3000,
+  servicePort: process.env.TTSM_SERVICE_PORT ?? 3000,
   consistency: {
     strategy: (process.env.CONSISTENCY_STRATEGY ?? 'noop') as SupportedConsistencyStrategies,
     p2p: {

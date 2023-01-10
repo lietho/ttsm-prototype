@@ -1,6 +1,6 @@
-import { filter, Observable } from 'rxjs';
-import { ConsistencyMessage } from '../models';
-import { ConsistencyMessageFactory } from './create-consistency-message';
+import { filter, Observable } from "rxjs";
+import { ConsistencyMessage } from "../models";
+import { ConsistencyMessageFactory } from "./create-consistency-message";
 
 /**
  * Only returns messages of the given type.
@@ -9,7 +9,7 @@ import { ConsistencyMessageFactory } from './create-consistency-message';
 export function ofConsistencyMessage<T>(consistencyMessage: ConsistencyMessageFactory<T>) {
   return function(source: Observable<ConsistencyMessage<T>>): Observable<ConsistencyMessage<T>> {
     return source.pipe(
-      filter((msg) => msg?.type === consistencyMessage.type)
+      filter((msg) => consistencyMessage.sameAs(msg))
     );
   };
 }

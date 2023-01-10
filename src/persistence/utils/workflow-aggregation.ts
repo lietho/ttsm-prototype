@@ -1,31 +1,27 @@
 import * as eventTypes from "src/persistence/persistence.events";
-import { PersistenceEvent, } from "./create-persistence-event";
+import { Workflow } from "src/workflow";
+import { PersistenceEvent } from "./create-persistence-event";
 import { handleEvent } from "./handle-event";
-import { Workflow, WorkflowProposalParticipantApproval, WorkflowProposalParticipantDenial } from "src/workflow";
 
 export function aggregateWorkflowEvents(events: PersistenceEvent<unknown>[]): Workflow {
-  return events.reduce((result, event) => {
-    const eventType = event?.type;
+  const workflows = aggregateAllWorkflowEvents(events);
+  const workflowIds = Object.keys(workflows);
 
-    if (eventTypes.proposeWorkflow.sameAs(eventType)) result = event.data as any as Workflow;
-    if (eventTypes.receivedWorkflow.sameAs(eventType)) result = { ...result, ...(event.data as any as Workflow) };
-    if (eventTypes.localWorkflowAcceptedByRuleService.sameAs(eventType) && result.acceptedByRuleServices !== false) result.acceptedByRuleServices = true;
-    if (eventTypes.localWorkflowRejectedByRuleService.sameAs(eventType)) result.acceptedByRuleServices = false;
-    if (eventTypes.receivedWorkflowAcceptedByRuleService.sameAs(eventType) && result.acceptedByRuleServices !== false) result.acceptedByRuleServices = true;
-    if (eventTypes.receivedWorkflowRejectedByRuleService.sameAs(eventType)) result.acceptedByRuleServices = false;
-    if (eventTypes.workflowAcceptedByParticipant.sameAs(eventType)) result.participantsAccepted = [...(result.participantsAccepted ?? []), (event.data as any as WorkflowProposalParticipantApproval)];
-    if (eventTypes.workflowRejectedByParticipant.sameAs(eventType)) result.participantsRejected = [...(result.participantsRejected ?? []), (event.data as any as WorkflowProposalParticipantDenial)];
-    if (eventTypes.workflowAccepted.sameAs(eventType) && result.acceptedByParticipants !== false) result.acceptedByParticipants = true;
-    if (eventTypes.workflowRejected.sameAs(eventType)) result.acceptedByParticipants = false;
+  if (workflowIds.length > 1) {
+    throw new Error("Couldn't aggregate to a unique workflow!");
+  }
 
-    return result;
-  }, null as Workflow);
+  if (workflowIds.length == 0) {
+    return null;
+  }
+
+  return workflows[workflowIds[0]];
 }
 
 export function aggregateAllWorkflowEvents(events: PersistenceEvent<unknown>[]): Record<string, Workflow> {
   return events.reduce((result, event) => {
-    handleEvent(eventTypes.proposeWorkflow, event, event => result[event.data.consistencyId] = event.data as any as Workflow);
-    handleEvent(eventTypes.receivedWorkflow, event, event => result[event.data.consistencyId] = { ...result[event.data.consistencyId], ...(event.data as any as Workflow) });
+    handleEvent(eventTypes.proposeWorkflow, event, event => result[event.data.consistencyId] = { ...event.data });
+    handleEvent(eventTypes.receivedWorkflow, event, event => result[event.data.consistencyId] = { ...event.data });
     handleEvent(eventTypes.localWorkflowAcceptedByRuleService, event, event => {
       if (result[event.data.id].acceptedByRuleServices !== false) {
         result[event.data.id].acceptedByRuleServices = true;

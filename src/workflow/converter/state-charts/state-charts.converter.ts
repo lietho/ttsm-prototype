@@ -13,8 +13,8 @@ import { WorkflowConfigConverter } from "../workflow-config.converter";
 import { StateChartWorkflow } from "./state-chart-workflow";
 
 const STATE_NAME_EXTERNAL_PARTICIPANT_ACK = "$EXTERNAL_RECEIVED_ACK";
-const EVENT_NAME_EXTERNAL_PARTICIPANT_ACK_PREFIX = "$RECEIVE_ACK_";
-const EVENT_NAME_EXTERNAL_PARTICIPANT_NACK_PREFIX = "$RECEIVE_NACK_";
+export const EVENT_NAME_EXTERNAL_PARTICIPANT_ACK_PREFIX = "$RECEIVE_ACK_";
+export const EVENT_NAME_EXTERNAL_PARTICIPANT_NACK_PREFIX = "$RECEIVE_NACK_";
 
 export const convertStateChartWorkflowConfig: WorkflowConfigConverter<StateChartWorkflow> = (workflow, config) => {
   const states = transformObject(workflow.states, (stateConfig, stateName) => {
@@ -148,7 +148,7 @@ function transformObject<T, R>(obj: Record<string, T>, transform: (T, string) =>
   }, {} as Record<string, R>);
 }
 
-function evaluateObjectDefinition(objDefinition: ObjectDefinition, jsonPathContext: any): any {
+export function evaluateObjectDefinition(objDefinition: ObjectDefinition, jsonPathContext: any): any {
   if (objDefinition.type !== "object") {
     if (objDefinition.jsonPath != null) {
       return JSONPath({ path: objDefinition.jsonPath, json: jsonPathContext, wrap: false });

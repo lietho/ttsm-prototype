@@ -1,8 +1,18 @@
-import { Body, Controller, Get, Param, Post, Query } from '@nestjs/common';
-import { WorkflowDto, WorkflowInstanceDto, WorkflowInstanceTransitionDto } from './models';
-import { WorkflowService } from './workflow.service';
-import { ApiConsumes, ApiCreatedResponse, ApiNotFoundResponse, ApiOkResponse, ApiOperation, ApiParam, ApiProduces, ApiQuery, ApiTags } from '@nestjs/swagger';
-import { renameConsistencyId } from './utils';
+import { BadRequestException, Body, Controller, Get, Param, Post, Query } from "@nestjs/common";
+import {
+  ApiConsumes,
+  ApiCreatedResponse,
+  ApiNotFoundResponse,
+  ApiOkResponse,
+  ApiOperation,
+  ApiParam,
+  ApiProduces,
+  ApiQuery,
+  ApiTags
+} from "@nestjs/swagger";
+import { WorkflowDto, WorkflowInstanceTransitionDto } from "./models";
+import { renameConsistencyId } from "./utils";
+import { WorkflowService } from "./workflow.service";
 
 @ApiConsumes('application/json')
 @ApiProduces('application/json')
@@ -114,6 +124,14 @@ export class WorkflowController {
   async advanceWorkflowInstance(@Param('workflowId') workflowId: string,
                                 @Param('instanceId') instanceId: string,
                                 @Body() transitionConfig: WorkflowInstanceTransitionDto) {
+    if (transitionConfig.event.includes(".")) {
+      throw new BadRequestException("Invoking child events is not allowed!");
+    }
+
+    if (transitionConfig.event.startsWith("$")) {
+      throw new BadRequestException("Invoking internal events is not allowed!");
+    }
+
     return renameConsistencyId(await this.workflowService.advanceWorkflowInstance(workflowId, instanceId, transitionConfig));
   }
 

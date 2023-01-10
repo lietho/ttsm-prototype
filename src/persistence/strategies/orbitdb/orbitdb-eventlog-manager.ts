@@ -1,6 +1,6 @@
-import { BehaviorSubject, map, merge, Observable, Subject, switchMap } from "rxjs";
+import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from "@nestjs/common";
 import { EventStore } from "orbit-db-eventstore";
-import { tap } from "rxjs/operators";
+import { BehaviorSubject, map, merge, Observable, ReplaySubject, Subject, switchMap } from "rxjs";
 import { environment } from "src/environment";
 import { importDynamic } from "src/persistence/strategies/orbitdb/util/import-dynamic";
 import { EventNotifier } from "./util";
@@ -11,36 +11,46 @@ type Connection<T> = {
   localEvents: Subject<T>
 }
 
-export class OrbitDBEventLogManager<T> {
-  private ipfs: any;
-  private orbitdb: any;
+@Injectable()
+export class OrbitDBEventLogManager<T> implements OnModuleInit, OnModuleDestroy {
+  private readonly logger = new Logger(OrbitDBEventLogManager.name);
 
   private readonly connections = new Map<string, Connection<T>>();
 
   private readonly connectionSubject = new BehaviorSubject<void>(null);
+
+  private orbitdb: any;
+
+  private managerReadySubject = new ReplaySubject<void>(1);
+
+  public readonly managerReady$ = this.managerReadySubject.asObservable();
 
   public readonly all$: Observable<T> = this.connectionSubject.pipe(
     map(() => this.getConnections().map(name => this.getObservable(name))),
     switchMap((eventObservables: Observable<T>[]) => merge(...eventObservables))
   );
 
-  // eslint-disable-next-line @typescript-eslint/no-empty-function
-  private constructor() {
+  async onModuleInit() {
+    this.logger.debug("Connecting to IPFS and OrbitDB");
+    const { create } = await importDynamic("ipfs-http-client");
+    const orbitdb = (await importDynamic("orbit-db")).default;
+    const ipfs = await create({ url: new URL(environment.persistence.orbitDB.ipfsUrl) });
+
+    this.orbitdb = await orbitdb.createInstance(ipfs, {
+      directory: environment.persistence.orbitDB.localDirectory,
+      id: environment.persistence.orbitDB.id
+    });
+
+    this.managerReadySubject.next();
   }
 
   public get identityId(): string {
     return this.orbitdb.identity.id;
   }
 
-  public static async create<T>(): Promise<OrbitDBEventLogManager<T>> {
-    const instance = new OrbitDBEventLogManager<T>();
-    await instance.init();
-
-    return instance;
-  }
-
   public async addConnection(name: string, options: OrbitDBConnectionOptions) {
-    if (this.connections.has(name)) {
+    this.logger.debug(`Opening connection to database "${name}"`);
+    if (this.hasConnection(name)) {
       throw new Error(`A connection to the database "${name}" already exists!`);
     }
 
@@ -59,8 +69,19 @@ export class OrbitDBEventLogManager<T> {
 
     await store.load();
 
-    this.connections.set(name, {store, eventNotifier, localEvents});
+    this.connections.set(name, { store, eventNotifier, localEvents });
     this.connectionSubject.next();
+  }
+
+  public async removeConnection(name: string) {
+    this.logger.debug(`Disconnecting from database "${name}"`);
+    if(!this.hasConnection(name)) {
+      throw new Error(`Connection with name "${name}" not found!`);
+    }
+
+    const connection = this.connections.get(name);
+    await connection.store.close();
+    this.connections.delete(name);
   }
 
   public getConnections(): string[] {
@@ -72,17 +93,18 @@ export class OrbitDBEventLogManager<T> {
   }
 
   public async readStream(name: string): Promise<T[]> {
-    if (!this.connections.has(name)) {
+    this.logger.debug(`Reading all events from database "${name}"`);
+    if (!this.hasConnection(name)) {
       throw new Error(`Connection with name "${name}" not found!`);
     }
 
     const store = this.connections.get(name).store;
     const entries = store.iterator({ limit: -1 }).collect() as any[]; // LogEntry[]
-    return Promise.resolve(entries.map(e => e.payload.value))
+    return Promise.resolve(entries.map(e => e.payload.value));
   }
 
   public getObservable(name: string): Observable<T> {
-    if (!this.connections.has(name)) {
+    if (!this.hasConnection(name)) {
       throw new Error(`Connection with name "${name}" not found!`);
     }
 
@@ -90,31 +112,31 @@ export class OrbitDBEventLogManager<T> {
     return merge(connection.eventNotifier.events$, connection.localEvents);
   }
 
-  public async addEvent(name: string, event: T) {
-    if (!this.connections.has(name)) {
+  public async addEvent(name: string, event: T, propagateLocally = true) {
+    this.logger.debug(`adding event to database "${name}": ${JSON.stringify(event)}`);
+
+    if (!this.hasConnection(name)) {
       throw new Error(`Connection with name "${name}" not found!`);
     }
 
+    // remove all undefined values as IPLD cannot encode undefined
+    const cleanedEvent = JSON.parse(JSON.stringify(event));
+
     const connection = this.connections.get(name);
     const store = connection.store;
-    await store.add(event);
+    await store.add(cleanedEvent);
 
-    connection.localEvents.next(event);
+    if (propagateLocally) {
+      connection.localEvents.next(cleanedEvent);
+    }
   }
 
-  public async close(): Promise<void> {
+  async onModuleDestroy() {
+    await Promise.all(
+      Array.from(this.connections.values()).map(conn => conn.store.close())
+    );
+
     await this.orbitdb.disconnect();
-  }
-
-  private async init() {
-    // workaround for dynamic imports: https://github.com/microsoft/TypeScript/issues/43329
-    const { create } = await importDynamic("ipfs-http-client");
-    const OrbitDB = await importDynamic("orbit-db");
-    this.ipfs = await create({ url: new URL(environment.persistence.orbitDB.ipfsUrl) });
-    this.orbitdb = await OrbitDB.default.createInstance(this.ipfs, {
-      directory: environment.persistence.orbitDB.localDirectory,
-      id: environment.persistence.orbitDB.id
-    });
   }
 }
 
