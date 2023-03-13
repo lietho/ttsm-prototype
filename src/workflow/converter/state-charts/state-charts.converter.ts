@@ -152,7 +152,7 @@ function transformObject<T, R>(obj: Record<string, T>, transform: (T, string) =>
 }
 
 export function evaluateObjectDefinition(objDefinition: ObjectDefinition, jsonPathContext: any): any {
-  if (objDefinition.type !== "object") {
+  if (objDefinition.type !== "object" || objDefinition.properties == null) {
     if (objDefinition.jsonPath != null) {
       return JSONPath({ path: objDefinition.jsonPath, json: jsonPathContext, wrap: false });
     }
