@@ -17,8 +17,6 @@ services:
     ports:
       - '${STACK_EVENTSTORE_TCP_PORT}:${STACK_EVENTSTORE_TCP_PORT}'
       - '${STACK_EVENTSTORE_HTTP_PORT}:${STACK_EVENTSTORE_HTTP_PORT}'
-    networks:
-      - ttsm-net
   ipfs:
     container_name: ipfs-${STACK_POSTFIX}
     image: ipfs/kubo:v0.18.1
@@ -32,11 +30,11 @@ services:
       - ipfs:/data/ipfs
       - fuse:/ipfs
       - ipns:/ipns
+      - ./ipfs-init.sh:/container-init.d/ipfs-init.sh
     environment:
+      - STACK_IPFS_SWARM_PORT
       - IPFS_PATH=/data/ipfs
     command: [ "daemon", "--migrate=true", "--agent-version-suffix=docker", "--enable-pubsub-experiment" ]
-    networks:
-      - ttsm-net
   ttsm:
     container_name: ttsm-${STACK_POSTFIX}
     restart: unless-stopped
@@ -63,8 +61,6 @@ services:
       - INTEGRATIONS_ZEEBE_CLIENT_SECRET
     ports:
       - '${STACK_TTSM_PORT}:3000'
-    networks:
-      - ttsm-net
 volumes:
   ipfs:
     name: 'ipfs${STACK_POSTFIX}_path'
@@ -72,6 +68,3 @@ volumes:
     name: 'ipfs${STACK_POSTFIX}_fuse'
   ipns:
     name: 'ipns${STACK_POSTFIX}_fuse'
-networks:
-  ttsm-net:
-    driver: bridge
