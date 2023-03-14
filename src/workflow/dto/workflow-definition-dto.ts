@@ -1,10 +1,10 @@
 export interface WorkflowDefinitionDto {
   id: string;
-  states: Record<string, StateObject>;
+  activities: Record<string, ActivityObject>;
   initial: string; // no parallel or compound states possible in prototype
 }
 
-export interface StateObject {
+export interface ActivityObject {
   on?: Record<string, EventObject | string>;
   external?: boolean;
   externalParticipants: ExternalParticipant[]; // ignored
@@ -15,15 +15,14 @@ export interface StateObject {
 export interface EventObject {
   target: string;
   external?: boolean;
-  schema?: object; // TODO: JSON Schema
+  schema?: object;
   assign?: ObjectDefinition; // lightweight JSON Schema format, traversed, all values have to be JSON Path expressions and then assigned to context
 }
 
 export interface ExternalParticipant {
   id: string; // used for referencing participants in externalCondition and modelling the workflow
-  organizationId: string; // valid values: JSON Path or UUIDv4
-  workflowId: string; // valid values: JSON Path or UUIDv4
-  workflowInstanceId?: string; // valid values: JSON Path or UUIDv4 or undefined
+  connectorType: string;
+  recipientInfo: Record<string, any>;
   event: string;
   payload?: ObjectDefinition;
   acceptanceSchema?: object;

@@ -17,7 +17,7 @@ export const EVENT_NAME_EXTERNAL_PARTICIPANT_ACK_PREFIX = "$RECEIVE_ACK_";
 export const EVENT_NAME_EXTERNAL_PARTICIPANT_NACK_PREFIX = "$RECEIVE_NACK_";
 
 export const convertStateChartWorkflowConfig: WorkflowConfigConverter<StateChartWorkflow> = (workflow, config) => {
-  const states = transformObject(workflow.states, (stateConfig, stateName) => {
+  const states = transformObject(workflow.activities, (stateConfig, stateName) => {
     const stateTransitions = generateStateTransitions(stateConfig.on ?? []);
 
     if (stateConfig.external) {

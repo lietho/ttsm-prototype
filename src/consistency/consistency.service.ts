@@ -38,6 +38,10 @@ import { ofConsistencyMessage } from "./utils";
  */
 export const CONSISTENCY_STRATEGY_PROVIDER_TOKEN = "CONSISTENCY_STRATEGY";
 
+const RECIPIENT_ORGANIZATION_ID = "ORGANIZATION_ID";
+const RECIPIENT_WORKFLOW_ID = "WORKFLOW_ID";
+const RECIPIENT_WORKFLOW_INSTANCE_ID = "WORKFLOW_INSTANCE_ID";
+
 /**
  * Service that connects to the consistency stack to publish and receive messages. Most parameters for this
  * service can be configured in the gateways environment.
@@ -207,7 +211,7 @@ export class ConsistencyService implements OnModuleInit {
     }
 
     const currentState = transition.to as State<any, any>;
-    const stateDefinition = workflowModel.states[currentStateName];
+    const stateDefinition = workflowModel.activities[currentStateName];
 
     if (!stateDefinition.external) {
       return [];
@@ -218,17 +222,20 @@ export class ConsistencyService implements OnModuleInit {
     const jsonPathContext = { context: currentState.context };
 
     return stateDefinition.externalParticipants.map(ep => {
-      const organizationId = JSONPath({ path: ep.organizationId, json: jsonPathContext, wrap: false }) ?? ep.organizationId;
+      const rawOrganizationId = ep.recipientInfo[RECIPIENT_ORGANIZATION_ID];
+      const organizationId = JSONPath({ path: rawOrganizationId, json: jsonPathContext, wrap: false }) ?? rawOrganizationId;
 
-      const workflowId = UUIDV4_REGEX.test(ep.workflowId)
-        ? ep.workflowId
-        : JSONPath({ path: ep.workflowId, json: jsonPathContext, wrap: false });
+      const rawWorkflowId = ep.recipientInfo[RECIPIENT_WORKFLOW_ID];
+      const workflowId = UUIDV4_REGEX.test(rawWorkflowId)
+        ? rawWorkflowId
+        : JSONPath({ path: rawWorkflowId, json: jsonPathContext, wrap: false });
 
+      const rawWorkflowInstanceId = ep.recipientInfo[RECIPIENT_WORKFLOW_INSTANCE_ID];
       let instanceId: string;
-      if (ep.workflowInstanceId != null) {
-        instanceId = UUIDV4_REGEX.test(ep.organizationId)
-          ? ep.organizationId
-          : JSONPath({ path: ep.workflowInstanceId, json: jsonPathContext, wrap: false });
+      if (rawWorkflowInstanceId != null) {
+        instanceId = UUIDV4_REGEX.test(rawOrganizationId)
+          ? rawOrganizationId
+          : JSONPath({ path: rawWorkflowInstanceId, json: jsonPathContext, wrap: false });
       }
 
       const payload = ep.payload != null ? evaluateObjectDefinition(ep.payload, jsonPathContext) : undefined;

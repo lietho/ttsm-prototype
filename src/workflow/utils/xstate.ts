@@ -1,4 +1,4 @@
-import { EventObject, StateObject } from "src/workflow/dto/workflow-definition-dto";
+import { ActivityObject, EventObject } from "src/workflow/dto/workflow-definition-dto";
 import { SupportedWorkflowModels } from "src/workflow/models";
 import { createMachine, EventData, interpret, MachineConfig, State, StateValue } from "xstate";
 
@@ -10,9 +10,9 @@ export const performStateTransition = (config: MachineConfig<any, any, any>, fro
   return result;
 };
 
-export function getCurrentStateDefinition(currentState: State<any,  any>, workflowModel: SupportedWorkflowModels): StateObject {
+export function getCurrentStateDefinition(currentState: State<any,  any>, workflowModel: SupportedWorkflowModels): ActivityObject {
   const currentStateName = typeof(currentState.value) === "string" ? currentState.value : Object.keys(currentState.value)[0];
-  return workflowModel.states[currentStateName];
+  return workflowModel.activities[currentStateName];
 }
 
 export function getCurrentTransitionDefinition(currentState: State<any,  any>, eventName: string, workflowModel: SupportedWorkflowModels): EventObject | string {

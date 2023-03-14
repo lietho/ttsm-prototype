@@ -17,6 +17,26 @@ services:
     ports:
       - '${STACK_EVENTSTORE_TCP_PORT}:${STACK_EVENTSTORE_TCP_PORT}'
       - '${STACK_EVENTSTORE_HTTP_PORT}:${STACK_EVENTSTORE_HTTP_PORT}'
+    networks:
+      - ttsm-net
+  ipfs:
+    container_name: ipfs-${STACK_POSTFIX}
+    image: ipfs/kubo:v0.18.1
+    restart: always
+    ports:
+      - '${STACK_IPFS_SWARM_PORT}:4001'
+      - '${STACK_IPFS_SWARM_PORT}:4001/udp'
+      - '${STACK_IPFS_GATEWAY_TCP_PORT}:8080'
+      - '${STACK_IPFS_API_TCP_PORT}:5001'
+    volumes:
+      - ipfs:/data/ipfs
+      - fuse:/ipfs
+      - ipns:/ipns
+    environment:
+      - IPFS_PATH=/data/ipfs
+    command: [ "daemon", "--migrate=true", "--agent-version-suffix=docker", "--enable-pubsub-experiment" ]
+    networks:
+      - ttsm-net
   ttsm:
     container_name: ttsm-${STACK_POSTFIX}
     restart: unless-stopped
@@ -33,6 +53,8 @@ services:
       - CONSISTENCY_EVM_CONTRACT_ADDRESS
       - CONSISTENCY_EVM_CLIENT_ADDRESS
       - PERSISTENCE_SERVICE_URL
+      - PERSISTENCE_ORBITDB_ID
+      - PERSISTENCE_ORBITDB_IPFS_URL
       - RULES_SERVICE_URL
       - INTEGRATIONS_ZEEBE_ADDRESS
       - INTEGRATIONS_ZEEBE_AUTHORIZATION_SERVER_URL
@@ -41,3 +63,15 @@ services:
       - INTEGRATIONS_ZEEBE_CLIENT_SECRET
     ports:
       - '${STACK_TTSM_PORT}:3000'
+    networks:
+      - ttsm-net
+volumes:
+  ipfs:
+    name: 'ipfs${STACK_POSTFIX}_path'
+  fuse:
+    name: 'ipfs${STACK_POSTFIX}_fuse'
+  ipns:
+    name: 'ipns${STACK_POSTFIX}_fuse'
+networks:
+  ttsm-net:
+    driver: bridge
