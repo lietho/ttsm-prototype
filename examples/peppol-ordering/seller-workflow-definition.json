@@ -1,0 +1,164 @@
+{
+    "config": {
+        "optimizer": [
+            "noop"
+        ],
+        "type": "STATE_CHARTS"
+    },
+    "workflow": {
+        "id": "Ordering (Seller)",
+        "initial": "RECEIVE_AND_HANDLE_ORDER",
+        "activities": {
+            "RECEIVE_AND_HANDLE_ORDER": {
+                "on": {
+                    "ORDER": {
+                        "target": "HANDLE_ORDER_GATEWAY",
+                        "external": true,
+                        "assign": {
+                            "type": "object",
+                            "properties": {
+                                "organizationId": {
+                                    "jsonPath": "$.origin.organizationId"
+                                },
+                                "workflowId": {
+                                    "jsonPath": "$.origin.workflowId"
+                                },
+                                "workflowInstanceId": {
+                                    "jsonPath": "$.origin.workflowInstanceId"
+                                },
+                                "quantity": {
+                                    "jsonPath": "$.event.quantity"
+                                },
+                                "articleNumber": {
+                                    "jsonPath": "$.event.articleNumber"
+                                },
+                                "articleName": {
+                                    "jsonPath": "$.event.articleName"
+                                }
+                            }
+                        },
+                        "schema": {
+                            "title": "Order",
+                            "description": "Models request from a buyer for ordering products",
+                            "type": "object",
+                            "properties": {
+                                "quantity": {
+                                    "type": "number",
+                                    "exclusiveMinimum": 0
+                                },
+                                "articleNumber": {
+                                    "description": "String representation of an article number",
+                                    "type": "string"
+                                },
+                                "articleName": {
+                                    "type": "string",
+                                    "maxLength": 60,
+                                    "minLength": 2
+                                }
+                            },
+                            "required": [
+                                "quantity",
+                                "articleNumber"
+                            ]
+                        }
+                    }
+                }
+            },
+            "HANDLE_ORDER_GATEWAY": {
+                "on":{
+                    "YES": "GENERATE_HEADER_LEVEL_ACK",
+                    "NO": "GENERATE_HEADER_LEVEL_NACK",
+                    "PARTIALLY": "GENERATE_LINE_LEVEL_ACK"
+                }
+            },
+            "GENERATE_HEADER_LEVEL_ACK": {
+                "on": {
+                    "SUBMIT_WORKER_ORDER_RESPONSE": {
+                        "target": "SEND_ORDER_RESPONSE",
+                        "assign": {
+                            "type": "object",
+                            "properties": {
+                                "orderResponseCid": {
+                                    "jsonPath": "$.event.orderResponseCid"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "GENERATE_HEADER_LEVEL_NACK": {
+                "on": {
+                    "SUBMIT_WORKER_ORDER_RESPONSE": {
+                        "target": "SEND_ORDER_RESPONSE",
+                        "assign": {
+                            "type": "object",
+                            "properties": {
+                                "orderResponseCid": {
+                                    "jsonPath": "$.event.orderResponseCid"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "GENERATE_LINE_LEVEL_ACK": {
+                "on": {
+                    "SUBMIT_WORKER_ORDER_RESPONSE": {
+                        "target": "SEND_ORDER_RESPONSE",
+                        "assign": {
+                            "type": "object",
+                            "properties": {
+                                "orderResponseCid": {
+                                    "jsonPath": "$.event.orderResponseCid"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "SEND_ORDER_RESPONSE": {
+                "on": {
+                    "": "ORDER_RECEIVED"
+                },
+                "external": true,
+                "externalParticipants": [
+                    {
+                        "id": "buyer_organization",
+                        "connectorType": "orbitdb",
+                        "recipientInfo": {
+                            "ORGANIZATION_ID": "$.context.organizationId",
+                            "WORKFLOW_ID": "$.context.workflowId",
+                            "WORKFLOW_INSTANCE_ID": "$.context.workflowInstanceId"
+                        },
+                        "event": "ORDER_RESPONSE",
+                        "assignOnAcceptance": {
+                            "type": "object",
+                            "properties": {
+                                "buyerHasAccepted": {
+                                    "value": true
+                                }
+                            }
+                        },
+                        "assignOnRejection": {
+                            "type": "object",
+                            "properties": {
+                                "buyerHasAccepted": {
+                                    "value": false
+                                }
+                            }
+                        },
+                        "payload": {
+                            "type": "object",
+                            "properties": {
+                                "orderResponseCid": { "jsonPath": "$.context.orderResponseCid" }
+                            }
+                        }
+                    }
+                ]
+            },
+            "ORDER_RECEIVED": {
+                "final": true
+            }
+        }
+    }
+}

@@ -9,6 +9,7 @@ import {
   ExternalWorkflowInstanceTransition,
   OriginatingParticipant,
   SupportedWorkflowModels,
+  WorkflowInstance,
   WorkflowInstanceParticipantApproval,
   WorkflowInstanceParticipantDenial,
   WorkflowInstanceProposal,
@@ -377,15 +378,21 @@ export class ConsistencyService implements OnModuleInit {
       }));
     }
 
-    const workflowInstance = await this.persistence.getWorkflowInstanceById(transition.workflowId, transition.instanceId);
-    if (workflowInstance == null) {
-      return this.dispatch(consistencyEvents.rejectTransition({
-        id: transition.originatingParticipant.workflowInstanceId,
-        workflowId: transition.originatingParticipant.workflowId,
-        transition: transition,
-        commitmentReference,
-        reasons: [`Instance with ID "${transition.instanceId}" does not exist`]
-      }));
+    let workflowInstance: WorkflowInstance;
+    if (transition.instanceId != null) {
+      workflowInstance = await this.persistence.getWorkflowInstanceById(transition.workflowId, transition.instanceId);
+      if (workflowInstance == null) {
+        return this.dispatch(consistencyEvents.rejectTransition({
+          id: transition.originatingParticipant.workflowInstanceId,
+          workflowId: transition.originatingParticipant.workflowId,
+          transition: transition,
+          commitmentReference,
+          reasons: [`Instance with ID "${transition.instanceId}" does not exist`]
+        }));
+      }
+    } else {
+      workflowInstance = await this.workflowService.launchWorkflowInstance(transition.workflowId);
+      // TODO: wait for the localWorkflowInstanceAccepted event before processing the transition and sending an ack/nack response
     }
 
     try {
