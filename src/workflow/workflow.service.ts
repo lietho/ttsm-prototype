@@ -52,7 +52,10 @@ export class WorkflowService {
     workflowModel = this.optimizer.optimize(workflowModel, config?.optimizer);
 
     // Propose the workflow to all other participants
-    return await this.persistence.proposeWorkflow({ config, workflowModel });
+    return await this.persistence.proposeWorkflow({
+      config,
+      workflowModel
+    });
   }
 
   /**
@@ -67,6 +70,7 @@ export class WorkflowService {
 
     return await this.persistence.launchWorkflowInstance({
       workflowId,
+      organizationId: workflow.organizationId,
       currentState: service.initialState
     });
   }
@@ -149,7 +153,7 @@ export class WorkflowService {
    * @param transition
    * @param externalIncomingTransition
    */
-  async onExternalTransitionAcknowledge(workflowId: string, instanceId: string, transition: WorkflowInstanceTransitionDto, externalIncomingTransition: ExternalWorkflowInstanceTransition) {
+  async onExternalTransitionAcknowledge(workflowId: string, instanceId: string, transition: WorkflowInstanceTransitionDto, originatingParticipant: OriginatingParticipant) {
     const workflow = await this.persistence.getWorkflowById(workflowId);
     if (workflow == null) throw new NotFoundException(`Workflow with ID "${workflowId}" does not exist`);
 
@@ -162,7 +166,7 @@ export class WorkflowService {
       throw new Error("External acknowledgements can only be accepted on external events!");
     }
 
-    const { previousState, currentState } = this.internalAdvanceWorkflowInstance(workflow, workflowInstance, transition);
+    const { previousState, currentState } = this.internalAdvanceWorkflowInstance(workflow, workflowInstance, transition, originatingParticipant);
 
     await this.persistence.advanceWorkflowInstanceState({
       id: instanceId,

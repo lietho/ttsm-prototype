@@ -14,6 +14,7 @@ export type WorkflowInstanceStatus = 'PENDING' | 'ACCEPTED' | 'REJECTED';
 export interface WorkflowInstanceContext {
   workflowId: string;
   id: string;
+  organizationId: string;
 }
 
 export interface WorkflowInstance extends ConsistencyEntity, WorkflowInstanceContext {

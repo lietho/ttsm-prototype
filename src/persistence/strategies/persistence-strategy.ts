@@ -16,7 +16,7 @@ export interface PersistenceStrategy {
    * Proposes a new workflow to all participants.
    * @param proposal
    */
-  proposeWorkflow(proposal: Omit<WorkflowProposal, "consistencyId" | "id">): Promise<Workflow>;
+  proposeWorkflow(proposal: Omit<WorkflowProposal, "organizationId" | "consistencyId" | "id">): Promise<Workflow>;
 
   /**
    * Dispatches a workflow specification event.

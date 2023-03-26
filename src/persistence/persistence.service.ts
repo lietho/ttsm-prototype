@@ -1,7 +1,8 @@
 import { Inject, Injectable } from "@nestjs/common";
 import {
   Workflow,
-  WorkflowInstance, WorkflowInstanceContext,
+  WorkflowInstance,
+  WorkflowInstanceContext,
   WorkflowInstanceProposal,
   WorkflowInstanceTransition,
   WorkflowProposal
@@ -26,7 +27,7 @@ export class PersistenceService {
    * Proposes a new workflow to all participants.
    * @param proposal
    */
-  async proposeWorkflow(proposal: Omit<WorkflowProposal, "consistencyId" | "id">): Promise<Workflow> {
+  async proposeWorkflow(proposal: Omit<WorkflowProposal, "organizationId" | "consistencyId" | "id">): Promise<Workflow> {
     return await this.persistenceStrategy.proposeWorkflow(proposal);
   }
 

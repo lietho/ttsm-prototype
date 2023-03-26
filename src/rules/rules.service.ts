@@ -207,6 +207,7 @@ export class RulesService implements OnModuleInit {
         persistenceEvents.localWorkflowInstanceAcceptedByRuleService({
           id: proposal.consistencyId,
           workflowId: proposal.workflowId,
+          organizationId: proposal.organizationId,
           proposal
         })
       );
@@ -216,6 +217,7 @@ export class RulesService implements OnModuleInit {
         persistenceEvents.localWorkflowInstanceRejectedByRuleService({
           id: proposal.consistencyId,
           workflowId: proposal.workflowId,
+          organizationId: proposal.organizationId,
           proposal,
           validationErrors
         })
@@ -236,6 +238,7 @@ export class RulesService implements OnModuleInit {
         persistenceEvents.receivedWorkflowInstanceAcceptedByRuleService({
           id: proposal.consistencyId,
           workflowId: proposal.workflowId,
+          organizationId: proposal.organizationId,
           proposal
         })
       );
@@ -245,6 +248,7 @@ export class RulesService implements OnModuleInit {
         persistenceEvents.receivedWorkflowInstanceRejectedByRuleService({
           id: proposal.consistencyId,
           workflowId: proposal.workflowId,
+          organizationId: proposal.organizationId,
           proposal,
           validationErrors
         })
@@ -265,6 +269,7 @@ export class RulesService implements OnModuleInit {
         persistenceEvents.localTransitionAcceptedByRuleService({
           id: transition.id,
           workflowId: transition.workflowId,
+          organizationId: transition.organizationId,
           transition
         })
       );
@@ -274,6 +279,7 @@ export class RulesService implements OnModuleInit {
         persistenceEvents.localTransitionRejectedByRuleService({
           id: transition.id,
           workflowId: transition.workflowId,
+          organizationId: transition.organizationId,
           transition,
           validationErrors
         })
@@ -294,6 +300,7 @@ export class RulesService implements OnModuleInit {
         persistenceEvents.receivedTransitionAcceptedByRuleService({
           id: transition.id,
           workflowId: transition.workflowId,
+          organizationId: transition.organizationId,
           transition
         })
       );
@@ -303,6 +310,7 @@ export class RulesService implements OnModuleInit {
         persistenceEvents.receivedTransitionRejectedByRuleService({
           id: transition.id,
           workflowId: transition.workflowId,
+          organizationId: transition.organizationId,
           transition,
           validationErrors
         })

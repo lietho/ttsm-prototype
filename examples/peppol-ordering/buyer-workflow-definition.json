@@ -87,6 +87,9 @@
                             "properties": {
                                 "sellerHasAccepted": {
                                     "value": true
+                                },
+                                "sellerWorkflowInstanceId": {
+                                    "jsonPath": "$.origin.workflowInstanceId"
                                 }
                             }
                         },

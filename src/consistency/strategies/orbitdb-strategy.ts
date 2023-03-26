@@ -123,6 +123,7 @@ export class OrbitDBStrategy implements ConsistencyStrategy, OnApplicationBootst
         this.receiveConsistencyMessage(consistencyEvents.rejectTransition({
           workflowId: transition.workflowId,
           id: transition.instanceId,
+          organizationId: this.getOrganizationIdentifier(),
           reasons: [ex.message],
           transition: transition
         }));

@@ -97,6 +97,7 @@ export class ConsistencyService implements OnModuleInit {
         await this.dispatch(consistencyEvents.acceptWorkflowInstance({
           id: approval.id,
           workflowId: approval.proposal.workflowId,
+          organizationId: approval.proposal.organizationId,
           proposal: approval.proposal
         }));
       }
@@ -106,6 +107,7 @@ export class ConsistencyService implements OnModuleInit {
         await this.dispatch(consistencyEvents.rejectWorkflowInstance({
           id: denial.id,
           workflowId: denial.proposal.workflowId,
+          organizationId: denial.proposal.organizationId,
           proposal: denial.proposal,
           reasons: denial.validationErrors.map((curr) => curr.reason)
         }));
@@ -128,7 +130,14 @@ export class ConsistencyService implements OnModuleInit {
         await this.dispatch(consistencyEvents.acceptTransition({
           id: originatingParticipant.workflowInstanceId,
           workflowId: originatingParticipant.workflowId,
-          transition: approval.transition.originatingExternalTransition
+          transition: approval.transition.originatingExternalTransition,
+          organizationId: originatingParticipant.organizationId,
+          originatingParticipant: {
+            organizationId: this.consistencyStrategy.getOrganizationIdentifier(),
+            workflowId: approval.workflowId,
+            workflowInstanceId: approval.id,
+            externalIdentifier: originatingParticipant.externalIdentifier
+          }
         }));
       }
 
@@ -138,6 +147,7 @@ export class ConsistencyService implements OnModuleInit {
         await this.dispatch(consistencyEvents.rejectTransition({
           id: originatingParticipant.workflowInstanceId,
           workflowId: originatingParticipant.workflowId,
+          organizationId: this.consistencyStrategy.getOrganizationIdentifier(),
           transition: denial.transition.originatingExternalTransition,
           reasons: denial.validationErrors.map((curr) => curr.reason)
         }));
@@ -372,6 +382,7 @@ export class ConsistencyService implements OnModuleInit {
       return this.dispatch(consistencyEvents.rejectTransition({
         id: transition.originatingParticipant.workflowInstanceId,
         workflowId: transition.originatingParticipant.workflowId,
+        organizationId: this.consistencyStrategy.getOrganizationIdentifier(),
         transition: transition,
         commitmentReference,
         reasons: [`Workflow with ID "${transition.workflowId}" does not exist`]
@@ -385,6 +396,7 @@ export class ConsistencyService implements OnModuleInit {
         return this.dispatch(consistencyEvents.rejectTransition({
           id: transition.originatingParticipant.workflowInstanceId,
           workflowId: transition.originatingParticipant.workflowId,
+          organizationId: this.consistencyStrategy.getOrganizationIdentifier(),
           transition: transition,
           commitmentReference,
           reasons: [`Instance with ID "${transition.instanceId}" does not exist`]
@@ -409,6 +421,7 @@ export class ConsistencyService implements OnModuleInit {
         return this.dispatch(consistencyEvents.rejectTransition({
           id: transition.originatingParticipant.workflowInstanceId,
           workflowId: transition.originatingParticipant.workflowId,
+          organizationId: this.consistencyStrategy.getOrganizationIdentifier(),
           transition: transition,
           commitmentReference,
           reasons: [`An error occurred: ${ex.message}`]
@@ -425,7 +438,7 @@ export class ConsistencyService implements OnModuleInit {
    */
   private async onParticipantAcceptedTransition(approval: WorkflowInstanceTransitionParticipantApproval, commitmentReference: string) {
     const ackTransitionName = `${EVENT_NAME_EXTERNAL_PARTICIPANT_ACK_PREFIX}${approval.transition.originatingParticipant.externalIdentifier}`;
-    await this.workflowService.onExternalTransitionAcknowledge(approval.workflowId, approval.id, { event: ackTransitionName }, approval.transition);
+    await this.workflowService.onExternalTransitionAcknowledge(approval.workflowId, approval.id, { event: ackTransitionName }, approval.originatingParticipant);
 
     await this.persistence.dispatchTransitionEvent(approval.id, persistenceEvents.transitionAcceptedByParticipant({
       ...approval,

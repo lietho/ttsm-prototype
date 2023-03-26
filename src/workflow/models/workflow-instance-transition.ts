@@ -4,6 +4,7 @@ import { RuleServiceValidationError } from "../../rules";
 export interface WorkflowInstanceTransitionContext {
   workflowId: string;
   id: string;
+  organizationId: string;
 }
 
 export interface WorkflowInstanceTransition extends WorkflowInstanceTransitionContext {
@@ -48,6 +49,7 @@ export interface WorkflowInstanceTransitionRuleServiceDenial extends WorkflowIns
 export interface WorkflowInstanceTransitionParticipantApproval extends WorkflowInstanceTransitionContext {
   id: string;
   transition: ExternalWorkflowInstanceTransition;
+  originatingParticipant: OriginatingParticipant;
   commitmentReference?: string;
 }
 

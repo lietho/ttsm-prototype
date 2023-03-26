@@ -20,13 +20,19 @@ export function aggregateWorkflowInstanceEvents(events: PersistenceEvent<unknown
 
 export function aggregateWorkflowInstanceIds(events: PersistenceEvent<unknown>[]): WorkflowInstanceContext[] {
   const instanceIdMapping = events.reduce((result, event) => {
-    handleEvent(eventTypes.launchWorkflowInstance, event, event => result[event.data.consistencyId] = event.data.workflowId);
-    handleEvent(eventTypes.receivedWorkflowInstance, event, event => result[event.data.consistencyId] = event.data.workflowId);
+    handleEvent(eventTypes.launchWorkflowInstance, event, event => result[event.data.consistencyId] = {
+      workflowId: event.data.workflowId,
+      organizationId: event.data.organizationId
+    });
+    handleEvent(eventTypes.receivedWorkflowInstance, event, event => result[event.data.consistencyId] = {
+      workflowId: event.data.workflowId,
+      organizationId: event.data.organizationId
+    });
 
     return result;
-  }, {} as Record<string, string>);
+  }, {} as Record<string, { workflowId: string, organizationId: string }>);
 
-  return Object.entries(instanceIdMapping).map(([id, workflowId]) => ({ workflowId, id }));
+  return Object.entries(instanceIdMapping).map(([id, { workflowId, organizationId }]) => ({ organizationId, workflowId, id }));
 }
 
 export function aggregateAllWorkflowInstanceEvents(events: PersistenceEvent<unknown>[]): Record<string, WorkflowInstance> {

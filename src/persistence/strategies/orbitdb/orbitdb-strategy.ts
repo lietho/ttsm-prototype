@@ -40,6 +40,7 @@ export class OrbitDBStrategy implements PersistenceStrategy, OnModuleInit, OnMod
     const proposedWorkflow: Workflow = {
       ...proposal,
       id: consistencyId,
+      organizationId: this.dbManager.identityId,
       consistencyId
     };
     await this.createWorkflowInstanceDatabase(proposedWorkflow.consistencyId);

@@ -1,7 +1,7 @@
 import { SupportedWorkflowModels } from "src/workflow/models/workflow.dto";
-import { WorkflowConfig } from './workflow-config';
-import { ConsistencyEntity } from '../../consistency';
-import { RuleServiceValidationError } from '../../rules';
+import { ConsistencyEntity } from "../../consistency";
+import { RuleServiceValidationError } from "../../rules";
+import { WorkflowConfig } from "./workflow-config";
 
 /**
  * The derived status of a workflow.
@@ -10,6 +10,7 @@ export type WorkflowStatus = 'PENDING' | 'ACCEPTED' | 'REJECTED';
 
 export interface WorkflowContext {
   id: string;
+  organizationId: string;
 }
 
 export interface Workflow extends ConsistencyEntity, WorkflowContext {

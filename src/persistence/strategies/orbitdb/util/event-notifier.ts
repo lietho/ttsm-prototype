@@ -6,7 +6,8 @@ export class EventNotifier<T> {
 
   public readonly events$ = this.eventSubject.asObservable();
 
-  constructor(private db: Store){
+  constructor(private db: Store,
+              private doPolling: boolean = false){
     this.setup();
   }
 
@@ -32,6 +33,16 @@ export class EventNotifier<T> {
 
       cachedEntries = [];
     });
+
+    if (this.doPolling) {
+      this.startPolling();
+    }
+  }
+
+  private startPolling() {
+    setInterval(() => {
+      console.log(this.db.iterator({ limit: -1 }).collect().map(e => e.payload.value));
+    }, 15000)
   }
 }
 

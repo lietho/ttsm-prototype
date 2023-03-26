@@ -33,9 +33,13 @@ export const environment = {
       serviceUrl: process.env.PERSISTENCE_SERVICE_URL ?? 'esdb://localhost:2113?tls=false',
     },
     orbitDB: {
-      ipfsUrl: process.env.PERSISTENCE_ORBITDB_IPFS_URL ?? 'http://127.0.0.1:5101',
       localDirectory: process.env.PERSISTENCE_ORBITDB_DIRECTORY ?? 'data/orbitdb',
-      id: process.env.PERSISTENCE_ORBITDB_ID ?? 'organization-a'
+      id: process.env.PERSISTENCE_ORBITDB_ID ?? 'organization-a',
+      ipfs: {
+        port: process.env.PERSISTENCE_ORBITDB_IPFS_PORT ?? 4002,
+        portWebSocket: process.env.PERSISTENCE_ORBITDB_IPFS_PORT_WS ?? 4003,
+        localDirectory: process.env.PERSISTENCE_ORBITDB_IPFS_DIRECTORY ?? 'data/ipfs'
+      }
     }
   },
   rules: {

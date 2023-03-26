@@ -33,9 +33,23 @@ export class OrbitDBEventLogManager<T> implements OnModuleInit, OnModuleDestroy 
 
   async onModuleInit() {
     this.logger.debug("Connecting to IPFS and OrbitDB");
-    const { create } = await importDynamic("ipfs-http-client");
+    const { create } = await importDynamic("ipfs");
     const orbitdb = (await importDynamic("orbit-db")).default;
-    const ipfs = await create(new URL(environment.persistence.orbitDB.ipfsUrl));
+    const ipfs = await create({
+      repo: environment.persistence.orbitDB.ipfs.localDirectory,
+      start: true,
+      EXPERIMENTAL: {
+        pubsub: true,
+      },
+      config: {
+        Addresses: {
+          Swarm: [
+            `/ip4/127.0.0.1/tcp/${environment.persistence.orbitDB.ipfs.port}`,
+            `/ip4/127.0.0.1/tcp/${environment.persistence.orbitDB.ipfs.portWebSocket}/ws`
+          ]
+        }
+      }
+    });
 
     this.orbitdb = await orbitdb.createInstance(ipfs, {
       directory: environment.persistence.orbitDB.localDirectory,
