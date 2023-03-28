@@ -1,5 +1,5 @@
-import { MachineConfig } from 'xstate';
+import { StateChartWorkflow } from "src/workflow/converter";
 
 export interface Optimizer {
-  (workflowModel: MachineConfig<any, any, any>): MachineConfig<any, any, any>;
+  (workflowModel: StateChartWorkflow): StateChartWorkflow;
 }

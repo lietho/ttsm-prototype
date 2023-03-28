@@ -52,7 +52,7 @@ export class RulesController {
     description: 'Rule services returned successfully'
   })
   async getRegisteredRuleServices() {
-    return await this.rulesService.getRegisteredRuleServices();
+    return await this.rulesService.getAllRegisteredRuleServices();
   }
 
 }

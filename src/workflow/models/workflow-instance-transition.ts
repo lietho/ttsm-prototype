@@ -1,35 +1,61 @@
-import { EventData, State, StateValue } from 'xstate';
-import { RuleServiceValidationError } from '../../rules';
+import { State } from "xstate";
+import { RuleServiceValidationError } from "../../rules";
 
-export interface WorkflowInstanceTransition {
+export interface WorkflowInstanceTransitionContext {
+  workflowId: string;
   id: string;
-  from: StateValue | State<any, any>;
-  to: StateValue | State<any, any>;
-  event: string;
-  payload?: EventData;
-  commitmentReference?: string;
+  organizationId: string;
 }
 
-export interface WorkflowInstanceTransitionRuleServiceApproval {
+export interface WorkflowInstanceTransition extends WorkflowInstanceTransitionContext {
+  id: string;
+  from: State<any, any>;
+  to: State<any, any>;
+  event: string;
+  payload?: object;
+  commitmentReference?: string;
+  originatingExternalTransition?: ExternalWorkflowInstanceTransition;
+  originatingExternalTransitionApproval?: WorkflowInstanceTransitionParticipantApproval;
+}
+
+export interface ExternalWorkflowInstanceTransition {
+  organizationId: string;
+  workflowId: string;
+  instanceId?: string;
+  externalIdentifier: string;
+  event: string;
+  payload?: object;
+  originatingParticipant?: OriginatingParticipant;
+}
+
+export interface OriginatingParticipant {
+  organizationId: string;
+  workflowId: string;
+  workflowInstanceId: string;
+  externalIdentifier: string;
+}
+
+export interface WorkflowInstanceTransitionRuleServiceApproval extends WorkflowInstanceTransitionContext {
   id: string;
   transition: WorkflowInstanceTransition;
 }
 
-export interface WorkflowInstanceTransitionRuleServiceDenial {
+export interface WorkflowInstanceTransitionRuleServiceDenial extends WorkflowInstanceTransitionContext {
   id: string;
   transition: WorkflowInstanceTransition;
   validationErrors: RuleServiceValidationError[];
 }
 
-export interface WorkflowInstanceTransitionParticipantApproval {
+export interface WorkflowInstanceTransitionParticipantApproval extends WorkflowInstanceTransitionContext {
   id: string;
-  transition: WorkflowInstanceTransition;
+  transition: ExternalWorkflowInstanceTransition;
+  originatingParticipant: OriginatingParticipant;
   commitmentReference?: string;
 }
 
-export interface WorkflowInstanceTransitionParticipantDenial {
+export interface WorkflowInstanceTransitionParticipantDenial extends WorkflowInstanceTransitionContext {
   id: string;
-  transition: WorkflowInstanceTransition;
+  transition: ExternalWorkflowInstanceTransition;
   commitmentReference?: string;
   reasons?: string[];
 }

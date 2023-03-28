@@ -1,6 +1,6 @@
 import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
-import { RedocModule, RedocOptions } from 'nestjs-redoc';
+import { RedocModule, RedocOptions } from '@nicholas.braun/nestjs-redoc';
 
 import { AppModule } from './app.module';
 import { LoggingInterceptor } from './core';

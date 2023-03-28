@@ -1,5 +1,4 @@
 import * as crypto from 'crypto';
-import { v4 as uuidv4 } from 'uuid';
 
 /**
  * Returns a random hex number with the given length.
@@ -20,4 +19,4 @@ export const randomEthereumAddress = (): string => '0x' + randomHexNumber(40);
  * Generates and returns a random UUIDv4.
  * @see {@link https://www.uuidgenerator.net/}
  */
-export const randomUUIDv4 = (): string => uuidv4();
+export const randomUUIDv4 = (): string => crypto.randomUUID();

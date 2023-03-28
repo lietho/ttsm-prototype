@@ -1,11 +1,13 @@
-## Time-travelling State Machine Prototype for verifiable Business Processes
-[![DOI](https://zenodo.org/badge/521292268.svg)](https://zenodo.org/badge/latestdoi/521292268)
-
-A prototypical implementation of a time-travelling state machine for business process and workflow management. This prototype shows the viability of time-travel verification of business process and
+## Time-travelling State Machine Prototype for verifiable inter-organizational Business Processes
+A prototypical implementation of a time-travelling state machine for inter-organizational business process and workflow management. This prototype shows the viability of time-travel verification of business process and
 workflow activities that are backed by the immutability and traceability of a blockchain.
+Collaboration with other business partner works with a peer-to-peer approach using [OrbitDB](https://github.com/orbitdb/orbit-db).
+
+This project is a fork of this [ttsm-prototype](https://github.com/danielkleebinder/ttsm-prototype) project by @danielkleebinder.
 
 ## Installing dependencies
 The application solely relies on node packages. Therefore, you can use your preferred node package manager to install all required dependencies.
+The prototype was tested on [Node.js](https://nodejs.org/) 18.15.0 LTS.
 
 ```bash
 > npm install
@@ -15,7 +17,7 @@ The application solely relies on node packages. Therefore, you can use your pref
 ## Running the app
 
 To run the app, [docker compose](https://www.docker.com/products/docker-desktop/) has to be installed locally. Afterwards, you have to choose which consistency strategy to use before continuing. For
-this, edit both environment files ``.env-stack-1`` and ``.env-stack-1`` in the ``/config`` directory and either use ``noop``, ``p2p`` or ``evm`` as your
+this, edit both environment files ``.env-stack-1`` and ``.env-stack-1`` in the ``/config`` directory and either use ``orbitdb-emv``, ``orbitdb`` or ``noop`` as your
 ``CONSISTENCY_STRATEGY``. Afterwards continue on with the applicable follow-up section:
 
 ### No-Operation (NoOp) Strategy
@@ -33,15 +35,18 @@ or by leveraging on your Docker environment by using the launch script ``launch.
 > launch.sh
 ```
 
-### Point-2-Point (P2P) Strategy
+### OrbitDB Strategy
+The OrbitDB persistence and consistency strategies use the OrbitDB Event Log for storing all events and even exchanging events with other nodes (i.e., business partners running the ttsm-prototype).
+The following environment variables can be configured in the ``.env-stack-X`` file:
 
-The point-2-point strategy directly sends messages from one participant to all the other ones. This strategy does not really have any consistency mechanism in place and should therefore only be used
-in development as well. Technically, the p2p-strategy supports more than two participants. Just configure you environment files as follows:
-
-```bash
-CONSISTENCY_STRATEGY=p2p
-CONSISTENCY_P2P_PEER_URLS=http://host.docker.internal:3001 http://host.docker.internal:3002 http://host.docker.internal:3003 ...
+```properties
+PERSISTENCE_ORBITDB_ID=organization-a
+PERSISTENCE_ORBITDB_IPFS_PORT=4102
+PERSISTENCE_ORBITDB_IPFS_PORT_WS=4103
 ```
+
+- The `PERSISTENCE_ORBITDB_ID` assigns an identifier to the OrbitDB instance.
+- The `PERSISTENCE_ORBITDB_IPFS_PORT` and `PERSISTENCE_ORBITDB_IPFS_PORT_WS` configures the swarm ports which are used in the local [js-ipfs](https://github.com/ipfs/js-ipfs) instance that gets started. 
 
 After everything has been configured, you can start your stacks using the launch script ``launch.sh``
 
@@ -49,38 +54,19 @@ After everything has been configured, you can start your stacks using the launch
 > launch.sh
 ```
 
-### Ethereum Virtual Machine (EVM) Strategy
-
-The EVM strategy uses an Ethereum virtual machine to deploy a smart contract that stores a list of hashes. These hashes are derived from the messages exchanged between participants. To launch this
-strategy, you require some sort of EVM that is capable of hosting smart contracts. An example for such a system, that's rather easy to set up, is [Ganache](https://trufflesuite.com/docs/ganache/).
-Launch your blockchain locally or use an existing testnet and deploy the smart contract ``/contracts/HashStorage.sol``. Everything is pre-configured for the Truffle Suite and should work
-out-of-the-box using the following command:
-
-```bash
-> truffle migrate
-```
-
-Deploying the smart contract will return an address where the smart contract is now available on the EVM. Use this address for **all stacks** by assigning it to ``CONSISTENCY_EVM_CONTRACT_ADDRESS``
-in the applicable environment files in ``/config``. Similar to the p2p-strategy, you also have to use peer URLs for all your participants to exchange the messages (the EVM is only used to store
-the hashes).
-
-```bash
-CONSISTENCY_STRATEGY=evm
-CONSISTENCY_EVM_PEER_URLS=http://host.docker.internal:3001 http://host.docker.internal:3002 http://host.docker.internal:3003 ...
-```
-
-Afterwards, you have to add a client wallet address that pays for all the hash transactions required, and a provider that writes the transactions to the EVM.
-
-```bash
-CONSISTENCY_EVM_PROVIDER=ws://host.docker.internal:7545
-CONSISTENCY_EVM_CLIENT_ADDRESS=0x05a797C381431c9CB7513f825E01F9Ae304A0AcE
-```
+### OrbitDB Ethereum Virtual Machine (EVM) Strategy
+The `orbitdb-evm` consistency strategy uses the OrbitDB strategy in the background and additionally posts hash-based commitments onto an Ethereum Smart Contract.
+Therefore, [web3.js](https://github.com/web3/web3.js) must be configured with a WebSocket address to an Ethereum client, an account address and a private key for signing the transactions.
+Additionally, the address of the `HashStorage.sol` smart contract can be set, it is already pre-filled with a deployed contract address on the Ethereum Goerli Testnet that can be used for demonstration purposes.
 
 After everything has been configured, you can start your stacks using the launch script ``launch.sh``
 
 ```bash
 > launch.sh
 ```
+
+### Known Issues
+- Due to OrbitDB still being in alpha-stage, it has issues running inside Docker containers. Even running the ttsm-prototype locally (outside Docker) does not work reliable all the time. Clearing the local IPFS and OrbitDB repository directories often helps.
 
 ## Stopping the app
 
@@ -89,20 +75,3 @@ If you started you application stacks using Docker, you can use the stop script 
 ```bash
 > stop.sh
 ```
-
-## Running the evaluation
-
-After choosing an applicable consistency strategy and launching the stack as described above, the evaluation can be triggered by running the following command.
-
-```bash
-> npm run evaluate
-```
-
-The results of the evaluation are stored inside the ``/evaluation/results`` folder.
-
-## Nice Stuff
-
-- Interesting workflows in https://github.com/jan-ladleif/bpm19-blockchain-based-choreographies
-- Event sourcing naming conventions: https://www.eventstore.com/blog/whats-in-an-event-name
-    - Follow the subject.object.predicate pattern (e.g. "system.workflow.proposed")
-- Event sourcing mistakes: http://www.natpryce.com/

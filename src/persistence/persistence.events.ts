@@ -1,4 +1,3 @@
-import { createPersistenceEvent } from './utils';
 import {
   WorkflowInstanceParticipantApproval,
   WorkflowInstanceParticipantDenial,
@@ -17,7 +16,8 @@ import {
   WorkflowProposalParticipantDenial,
   WorkflowProposalRuleServiceApproval,
   WorkflowProposalRuleServiceDenial
-} from '../workflow';
+} from "../workflow";
+import { createPersistenceEvent } from "./utils";
 
 // Workflow commands and events
 export const proposeWorkflow = createPersistenceEvent<WorkflowProposal>('Client.Workflow.Propose');

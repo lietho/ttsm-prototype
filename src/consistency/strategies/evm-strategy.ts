@@ -1,13 +1,14 @@
-import { Body, Controller, Inject, Logger, OnModuleInit, Post, Provider } from '@nestjs/common';
-import { HttpService } from '@nestjs/axios';
-import { firstValueFrom, Subject } from 'rxjs';
-import { ConsistencyStrategy } from './consistency-strategy';
-import { ConsistencyMessage } from '../models';
-import { environment } from '../../environment';
-import { EvmStrategyAbi } from './evm-strategy.abi';
-import Web3 from 'web3';
-import { ethereumSha256 } from '../../core/utils';
-import { performance } from 'perf_hooks';
+import { HttpService } from "@nestjs/axios";
+import { Body, Controller, Inject, Logger, OnModuleInit, Post, Provider } from "@nestjs/common";
+import { performance } from "perf_hooks";
+import { firstValueFrom, Subject } from "rxjs";
+import { CONSISTENCY_STRATEGY_PROVIDER_TOKEN } from "src/consistency/consistency.service";
+import Web3 from "web3";
+import { ethereumSha256 } from "../../core/utils";
+import { environment } from "../../environment";
+import { ConsistencyMessage } from "../models";
+import { ConsistencyStrategy, Status } from "./consistency-strategy";
+import { EvmStrategyAbi } from "./evm-strategy.abi";
 
 
 /**
@@ -82,7 +83,7 @@ export class EvmStrategy implements ConsistencyStrategy, OnModuleInit {
   }
 
   /** @inheritDoc */
-  async dispatch<T>(msg: ConsistencyMessage<T>) {
+  async dispatch<T>(msg: ConsistencyMessage<T>): Promise<Status> {
 
     // Stringify the payload to hash it
     const messageAsString = JSON.stringify(msg.payload);
@@ -111,7 +112,7 @@ export class EvmStrategy implements ConsistencyStrategy, OnModuleInit {
         this.logger.debug(`Sending message over a peer-to-peer network to "${url}"...`);
         return await firstValueFrom(this.http.post(url + '/_internal/consistency/evm', msg));
       })
-    );
+    ).then(() => 'OK' as Status, () => 'NOK' as Status);
 
     // The sender also has to receive the message
     await this.receiveConsistencyMessage(msg);
@@ -119,10 +120,14 @@ export class EvmStrategy implements ConsistencyStrategy, OnModuleInit {
   }
 
   /** @inheritDoc */
-  async getStatus() {
+  async getStatus(): Promise<Status> {
     return Promise.all(environment.consistency.evm.peerUrls
       .map(async (url) => await firstValueFrom(this.http.get(url + '/ping')))
-    );
+    ).then(() => 'OK', () => 'NOK');
+  }
+
+  getOrganizationIdentifier(): string {
+    throw new Error("Method not implemented.");
   }
 }
 
@@ -132,11 +137,15 @@ export class EvmStrategy implements ConsistencyStrategy, OnModuleInit {
 @Controller('_internal/consistency/evm')
 export class EvmStrategyController {
 
-  constructor(private evmStrategy: EvmStrategy) {
+  constructor(@Inject(CONSISTENCY_STRATEGY_PROVIDER_TOKEN) private evmStrategy: EvmStrategy) {
   }
 
   @Post()
   async receiveConsistencyMessage<T>(@Body() msg: ConsistencyMessage<T>) {
+    if (!(this.evmStrategy instanceof EvmStrategy)) {
+      throw new Error('This endpoint is only available when using the EvmStrategy (evm) consistency strategy!');
+    }
+
     return await this.evmStrategy.receiveConsistencyMessage(msg);
   }
 }

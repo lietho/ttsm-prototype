@@ -1,9 +1,7 @@
-import { MetadataType } from '@eventstore/db-client';
-
 /**
  * A persistence event.
  */
-export type PersistenceEvent<T> = { type: string, data: T, metadata?: MetadataType };
+export type PersistenceEvent<T> = { type: string, data: T, created: number };
 
 /**
  * The persistence event factory creates a new event when called and holds its type.
@@ -13,9 +11,8 @@ export interface PersistenceEventFactory<T> {
   /**
    * Creates the persistence event with a given data payload.
    * @param data Data.
-   * @param metadata Additional metadata.
    */
-  (data: T, metadata?: MetadataType): PersistenceEvent<T>;
+  (data: T): PersistenceEvent<T>;
 
   /**
    * Returns true if this event type and the given one are the same. Either accepts a {@link PersistenceEvent} or
@@ -35,7 +32,8 @@ export interface PersistenceEventFactory<T> {
  * @param type Persistence event type.
  */
 export function createPersistenceEvent<T>(type: string): PersistenceEventFactory<T> {
-  return Object.assign((data: T, metadata?: MetadataType): PersistenceEvent<T> => ({ type, data, metadata }), {
+  return Object.assign(
+    (data: T): PersistenceEvent<T> => ({ type, data, created: new Date().getTime() }), {
     type,
     sameAs: <S>(eventType: PersistenceEvent<S> | string) => (eventType as PersistenceEvent<S>)?.type === type || (eventType as string) === type
   });

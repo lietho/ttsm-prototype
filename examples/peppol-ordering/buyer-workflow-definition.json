@@ -1,0 +1,154 @@
+{
+    "config": {
+        "optimizer": [
+            "noop"
+        ],
+        "type": "STATE_CHARTS"
+    },
+    "workflow": {
+        "id": "Ordering (Buyer)",
+        "initial": "PREPARE_ORDER",
+        "activities": {
+            "PREPARE_ORDER": {
+                "on": {
+                    "LOCAL_ORDER": {
+                        "target": "SUBMIT_ORDER",
+                        "assign": {
+                            "type": "object",
+                            "properties": {
+                                "organizationId": {
+                                    "jsonPath": "$.event.organizationId"
+                                },
+                                "workflowId": {
+                                    "jsonPath": "$.event.workflowId"
+                                },
+                                "quantity": {
+                                    "jsonPath": "$.event.quantity"
+                                },
+                                "articleNumber": {
+                                    "jsonPath": "$.event.articleNumber"
+                                },
+                                "articleName": {
+                                    "jsonPath": "$.event.articleName"
+                                }
+                            }
+                        },
+                        "schema": {
+                            "title": "Order",
+                            "description": "Models external request for ordering products",
+                            "type": "object",
+                            "properties": {
+                                "organizationId": {
+                                    "type": "string"
+                                },
+                                "workflowId": {
+                                    "type": "string"
+                                },
+                                "quantity": {
+                                    "type": "number",
+                                    "exclusiveMinimum": 0
+                                },
+                                "articleNumber": {
+                                    "description": "String representation of an article number",
+                                    "type": "string"
+                                },
+                                "articleName": {
+                                    "type": "string",
+                                    "maxLength": 60,
+                                    "minLength": 2
+                                }
+                            },
+                            "required": [
+                                "organizationId",
+                                "workflowId",
+                                "quantity",
+                                "articleNumber"
+                            ]
+                        }
+                    }
+                }
+            },
+            "SUBMIT_ORDER": {
+                "on": {
+                    "": "RECEIVE_ORDER_RESPONSE"
+                },
+                "external": true,
+                "externalParticipants": [
+                    {
+                        "id": "seller_organization",
+                        "connectorType": "orbitdb",
+                        "recipientInfo": {
+                            "ORGANIZATION_ID": "$.context.organizationId",
+                            "WORKFLOW_ID": "$.context.workflowId"
+                        },
+                        "event": "ORDER",
+                        "assignOnAcceptance": {
+                            "type": "object",
+                            "properties": {
+                                "sellerHasAccepted": {
+                                    "value": true
+                                },
+                                "sellerWorkflowInstanceId": {
+                                    "jsonPath": "$.origin.workflowInstanceId"
+                                }
+                            }
+                        },
+                        "assignOnRejection": {
+                            "type": "object",
+                            "properties": {
+                                "sellerHasAccepted": {
+                                    "value": false
+                                }
+                            }
+                        },
+                        "payload": {
+                            "type": "object",
+                            "properties": {
+                                "quantity": { "jsonPath": "$.context.quantity" },
+                                "articleNumber": { "jsonPath": "$.context.articleNumber" },
+                                "articleName": { "jsonPath": "$.context.articleName" }
+                            }
+                        }
+                    }
+                ]
+            },
+            "RECEIVE_ORDER_RESPONSE": {
+                "on": {
+                    "ORDER_RESPONSE": {
+                        "target": "UPDATE_ORDER_STATUS",
+                        "external": true,
+                        "assign": {
+                            "type": "object",
+                            "properties": {
+                                "orderResponseIpfsCid": {
+                                    "jsonPath": "$.event.orderResponseCid"
+                                }
+                            }
+                        },
+                        "schema": {
+                            "title": "Submit Order Acknowledgment Response",
+                            "description": "Models ACK response to submit order event",
+                            "type": "object",
+                            "properties": {
+                                "orderResponseCid": {
+                                    "type": "string"
+                                }
+                            },
+                            "required": [
+                                "orderResponseCid"
+                            ]
+                        }
+                    }
+                }
+            },
+            "UPDATE_ORDER_STATUS": {
+                "on": {
+                    "STATUS_UPDATED": "ORDER_STATUS_UPDATED"
+                }
+            },
+            "ORDER_STATUS_UPDATED": {
+                "final": true
+            }
+        }
+    }
+}

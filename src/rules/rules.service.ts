@@ -1,12 +1,16 @@
-import { Injectable, Logger, NotFoundException, OnModuleInit } from '@nestjs/common';
-import { HttpService } from '@nestjs/axios';
-import { catchError, combineLatest, firstValueFrom, of } from 'rxjs';
-import { WorkflowInstanceProposal, WorkflowInstanceTransition, WorkflowProposal } from '../workflow';
-import { RuleService, RuleServiceValidationError } from './models';
-import { PersistenceService } from '../persistence';
-import * as persistenceEvents from '../persistence/persistence.events';
-import * as ruleEvents from './rules.events';
-import { randomUUIDv4 } from '../core/utils';
+import { jsonEvent, MetadataType } from "@eventstore/db-client";
+import { HttpService } from "@nestjs/axios";
+import { Injectable, Logger, NotFoundException, OnModuleInit } from "@nestjs/common";
+import { catchError, combineLatest, firstValueFrom, of } from "rxjs";
+import { environment } from "src/environment";
+import { RULE_SERVICES_PROJECTION, RULE_SERVICES_PROJECTION_NAME } from "src/rules/eventstoredb/projections";
+import { randomUUIDv4 } from "../core/utils";
+import { PersistenceEvent, PersistenceService } from "../persistence";
+import * as persistenceEvents from "../persistence/persistence.events";
+import { WorkflowInstanceProposal, WorkflowInstanceTransition, WorkflowProposal } from "../workflow";
+import { client as eventStore, connect as connectToEventStore } from "./eventstoredb";
+import { RuleService, RuleServiceValidationError } from "./models";
+import * as ruleEvents from "./rules.events";
 
 @Injectable()
 export class RulesService implements OnModuleInit {
@@ -18,14 +22,15 @@ export class RulesService implements OnModuleInit {
   }
 
   /** @inheritDoc */
-  onModuleInit() {
-    this.persistence.subscribeToAll(async (resolvedEvent) => {
-      const { event } = resolvedEvent;
-      if (event == null) return;
+  async onModuleInit() {
+    this.logger.log(`Establishing connection to event store on "${environment.persistence.eventStore.serviceUrl}"`);
+    await connectToEventStore();
 
-      const eventType = event?.type;
-      const eventData = event.data as unknown;
+    this.logger.log(`Creating event store projections: ${RULE_SERVICES_PROJECTION_NAME}`);
+    await eventStore.createProjection(RULE_SERVICES_PROJECTION_NAME, RULE_SERVICES_PROJECTION);
 
+    this.persistence.subscribeToAll(async (eventType: string, eventData: unknown) => {
+      this.logger.log(`Received Event: ${eventType}`);
       // Validate against all registered rule services if the proposal is valid
       if (persistenceEvents.proposeWorkflow.sameAs(eventType)) await this.onLocalWorkflowProposal(eventData as WorkflowProposal);
       if (persistenceEvents.receivedWorkflow.sameAs(eventType)) await this.onExternalWorkflowProposal(eventData as WorkflowProposal);
@@ -38,6 +43,111 @@ export class RulesService implements OnModuleInit {
       if (persistenceEvents.advanceWorkflowInstance.sameAs(eventType)) await this.onLocalInstanceTransition(eventData as WorkflowInstanceTransition);
       if (persistenceEvents.receivedTransition.sameAs(eventType)) await this.onExternalInstanceTransition(eventData as WorkflowInstanceTransition);
     });
+  }
+
+  /**
+   * Checks if the proposed workflow is valid.
+   * @param proposal Workflow to be proposed.
+   */
+  async validateWorkflowProposal(proposal: WorkflowProposal): Promise<RuleServiceValidationError[]> {
+    const ruleServices = await this.getAllRegisteredRuleServices();
+    if (ruleServices.length <= 0) {
+      return [];
+    }
+    const result = await firstValueFrom(combineLatest(ruleServices.map((curr) => this.http
+      .post<RuleServiceValidationError>(`${curr.url}/check-new-workflow`, proposal)
+      .pipe(catchError(() => {
+        this.logger.warn(`Rule service "${curr.name}" does not respond on ${curr.url} - ignore`);
+        return of(null);
+      }))
+    )));
+    return result
+      .map((response) => response?.data)
+      .filter((validationError) => validationError != null);
+  }
+
+  /**
+   * Checks if the launch of a new workflow instance is allowed.
+   * @param proposal Workflow instance to be launched.
+   */
+  async validateWorkflowInstance(proposal: WorkflowInstanceProposal): Promise<RuleServiceValidationError[]> {
+    const ruleServices = await this.getAllRegisteredRuleServices();
+    if (ruleServices.length <= 0) {
+      return [];
+    }
+    const result = await firstValueFrom(combineLatest(ruleServices.map((curr) => this.http
+      .post<RuleServiceValidationError>(`${curr.url}/check-new-instance`, proposal)
+      .pipe(catchError(() => {
+        this.logger.warn(`Rule service "${curr.name}" does not respond on ${curr.url} - ignore`);
+        return of(null);
+      }))
+    )));
+    return result
+      .map((response) => response?.data)
+      .filter((validationError) => validationError != null);
+  }
+
+  /**
+   * Checks if a state transition is allowed.
+   * @param transition Workflow instance state transition.
+   */
+  async validateInstanceTransition(transition: WorkflowInstanceTransition): Promise<RuleServiceValidationError[]> {
+    const ruleServices = await this.getAllRegisteredRuleServices();
+    if (ruleServices.length <= 0) {
+      return [];
+    }
+    const result = await firstValueFrom(combineLatest(ruleServices.map((curr) => this.http
+      .post(`${curr.url}/check-state-transition`, transition)
+      .pipe(catchError(() => {
+        this.logger.warn(`Rule service "${curr.name}" does not respond on ${curr.url} - ignore`);
+        return of(null);
+      }))
+    )));
+    return result
+      .map((response) => response?.data)
+      .filter((validationError) => validationError != null);
+  }
+
+  /**
+   * Registers a new rule service.
+   * @param name Rule service name.
+   * @param url Callback URL.
+   */
+  async registerRuleService(name: string, url: string) {
+    if (url.endsWith("/")) {
+      url = url.substring(0, url.length - 1);
+    }
+    const ruleService: RuleService = { name, url, id: randomUUIDv4() };
+    await this.dispatchRulesEvent(ruleService.id, ruleEvents.registerRuleService(ruleService));
+    return ruleService;
+  }
+
+  /**
+   * Unregisters an existing rule service.
+   * @param id Rule service ID.
+   */
+  async unregisterRuleService(id: string) {
+    const ruleService = await this.getRegisteredRuleServiceById(id);
+    if (ruleService == null) throw new NotFoundException(`Rule service "${id}" does not exist`);
+    await this.dispatchRulesEvent(id, ruleEvents.unregisterRuleService({ id }));
+  }
+
+  /** @inheritDoc */
+  async onModuleDestroy() {
+    this.logger.log(`Disable and delete all used projections`);
+    if (await this.existsProjection(RULE_SERVICES_PROJECTION_NAME)) {
+      await eventStore.disableProjection(RULE_SERVICES_PROJECTION_NAME);
+      await eventStore.deleteProjection(RULE_SERVICES_PROJECTION_NAME);
+    }
+  }
+
+  /**
+   * Returns all rule services registered.
+   */
+  async getAllRegisteredRuleServices(): Promise<RuleService[]> {
+    return Object
+      .entries(await this.getRuleServicesAggregate())
+      .map(([, ruleService]) => ruleService);
   }
 
   /**
@@ -75,7 +185,11 @@ export class RulesService implements OnModuleInit {
     } else {
       await this.persistence.dispatchWorkflowEvent(
         proposal.consistencyId,
-        persistenceEvents.receivedWorkflowRejectedByRuleService({ id: proposal.consistencyId, proposal, validationErrors })
+        persistenceEvents.receivedWorkflowRejectedByRuleService({
+          id: proposal.consistencyId,
+          proposal,
+          validationErrors
+        })
       );
     }
   }
@@ -90,12 +204,23 @@ export class RulesService implements OnModuleInit {
     if (validationErrors.length <= 0) {
       await this.persistence.dispatchInstanceEvent(
         proposal.consistencyId,
-        persistenceEvents.localWorkflowInstanceAcceptedByRuleService({ id: proposal.consistencyId, proposal })
+        persistenceEvents.localWorkflowInstanceAcceptedByRuleService({
+          id: proposal.consistencyId,
+          workflowId: proposal.workflowId,
+          organizationId: proposal.organizationId,
+          proposal
+        })
       );
     } else {
       await this.persistence.dispatchInstanceEvent(
         proposal.consistencyId,
-        persistenceEvents.localWorkflowInstanceRejectedByRuleService({ id: proposal.consistencyId, proposal, validationErrors })
+        persistenceEvents.localWorkflowInstanceRejectedByRuleService({
+          id: proposal.consistencyId,
+          workflowId: proposal.workflowId,
+          organizationId: proposal.organizationId,
+          proposal,
+          validationErrors
+        })
       );
     }
   }
@@ -110,12 +235,23 @@ export class RulesService implements OnModuleInit {
     if (validationErrors.length <= 0) {
       await this.persistence.dispatchInstanceEvent(
         proposal.consistencyId,
-        persistenceEvents.receivedWorkflowInstanceAcceptedByRuleService({ id: proposal.consistencyId, proposal })
+        persistenceEvents.receivedWorkflowInstanceAcceptedByRuleService({
+          id: proposal.consistencyId,
+          workflowId: proposal.workflowId,
+          organizationId: proposal.organizationId,
+          proposal
+        })
       );
     } else {
       await this.persistence.dispatchInstanceEvent(
         proposal.consistencyId,
-        persistenceEvents.receivedWorkflowInstanceRejectedByRuleService({ id: proposal.consistencyId, proposal, validationErrors })
+        persistenceEvents.receivedWorkflowInstanceRejectedByRuleService({
+          id: proposal.consistencyId,
+          workflowId: proposal.workflowId,
+          organizationId: proposal.organizationId,
+          proposal,
+          validationErrors
+        })
       );
     }
   }
@@ -128,14 +264,25 @@ export class RulesService implements OnModuleInit {
   private async onLocalInstanceTransition(transition: WorkflowInstanceTransition) {
     const validationErrors = await this.validateInstanceTransition(transition);
     if (validationErrors.length <= 0) {
-      await this.persistence.dispatchInstanceEvent(
+      await this.persistence.dispatchTransitionEvent(
         transition.id,
-        persistenceEvents.localTransitionAcceptedByRuleService({ id: transition.id, transition })
+        persistenceEvents.localTransitionAcceptedByRuleService({
+          id: transition.id,
+          workflowId: transition.workflowId,
+          organizationId: transition.organizationId,
+          transition
+        })
       );
     } else {
-      await this.persistence.dispatchInstanceEvent(
+      await this.persistence.dispatchTransitionEvent(
         transition.id,
-        persistenceEvents.localTransitionRejectedByRuleService({ id: transition.id, transition, validationErrors })
+        persistenceEvents.localTransitionRejectedByRuleService({
+          id: transition.id,
+          workflowId: transition.workflowId,
+          organizationId: transition.organizationId,
+          transition,
+          validationErrors
+        })
       );
     }
   }
@@ -148,109 +295,77 @@ export class RulesService implements OnModuleInit {
   private async onExternalInstanceTransition(transition: WorkflowInstanceTransition) {
     const validationErrors = await this.validateInstanceTransition(transition);
     if (validationErrors.length <= 0) {
-      await this.persistence.dispatchInstanceEvent(
+      await this.persistence.dispatchTransitionEvent(
         transition.id,
-        persistenceEvents.receivedTransitionAcceptedByRuleService({ id: transition.id, transition })
+        persistenceEvents.receivedTransitionAcceptedByRuleService({
+          id: transition.id,
+          workflowId: transition.workflowId,
+          organizationId: transition.organizationId,
+          transition
+        })
       );
     } else {
-      await this.persistence.dispatchInstanceEvent(
+      await this.persistence.dispatchTransitionEvent(
         transition.id,
-        persistenceEvents.receivedTransitionRejectedByRuleService({ id: transition.id, transition, validationErrors })
+        persistenceEvents.receivedTransitionRejectedByRuleService({
+          id: transition.id,
+          workflowId: transition.workflowId,
+          organizationId: transition.organizationId,
+          transition,
+          validationErrors
+        })
       );
     }
   }
 
   /**
-   * Checks if the proposed workflow is valid.
-   * @param proposal Workflow to be proposed.
+   * Returns a registered rule service by its ID.
+   * @param id
    */
-  async validateWorkflowProposal(proposal: WorkflowProposal): Promise<RuleServiceValidationError[]> {
-    const ruleServices = await this.persistence.getAllRegisteredRuleServices();
-    if (ruleServices.length <= 0) {
-      return [];
-    }
-    const result = await firstValueFrom(combineLatest(ruleServices.map((curr) => this.http
-      .post<RuleServiceValidationError>(`${curr.url}/check-new-workflow`, proposal)
-      .pipe(catchError(() => {
-        this.logger.warn(`Rule service "${curr.name}" does not respond on ${curr.url} - ignore`);
-        return of(null);
-      }))
-    )));
-    return result
-      .map((response) => response?.data)
-      .filter((validationError) => validationError != null);
+  private async getRegisteredRuleServiceById(id: string): Promise<RuleService> {
+    return (await this.getRuleServicesAggregate())[id];
   }
 
   /**
-   * Checks if the launch of a new workflow instance is allowed.
-   * @param proposal Workflow instance to be launched.
+   * Returns the projected aggregate of all rule services.
+   * @private
    */
-  async validateWorkflowInstance(proposal: WorkflowInstanceProposal): Promise<RuleServiceValidationError[]> {
-    const ruleServices = await this.persistence.getAllRegisteredRuleServices();
-    if (ruleServices.length <= 0) {
-      return [];
-    }
-    const result = await firstValueFrom(combineLatest(ruleServices.map((curr) => this.http
-      .post<RuleServiceValidationError>(`${curr.url}/check-new-instance`, proposal)
-      .pipe(catchError(() => {
-        this.logger.warn(`Rule service "${curr.name}" does not respond on ${curr.url} - ignore`);
-        return of(null);
-      }))
-    )));
-    return result
-      .map((response) => response?.data)
-      .filter((validationError) => validationError != null);
+  private async getRuleServicesAggregate(): Promise<Record<string, RuleService>> {
+    return await eventStore.getProjectionResult<Record<string, RuleService>>(RULE_SERVICES_PROJECTION_NAME) ?? {};
   }
 
   /**
-   * Checks if a state transition is allowed.
-   * @param transition Workflow instance state transition.
-   */
-  async validateInstanceTransition(transition: WorkflowInstanceTransition): Promise<RuleServiceValidationError[]> {
-    const ruleServices = await this.persistence.getAllRegisteredRuleServices();
-    if (ruleServices.length <= 0) {
-      return [];
-    }
-    const result = await firstValueFrom(combineLatest(ruleServices.map((curr) => this.http
-      .post(`${curr.url}/check-state-transition`, transition)
-      .pipe(catchError(() => {
-        this.logger.warn(`Rule service "${curr.name}" does not respond on ${curr.url} - ignore`);
-        return of(null);
-      }))
-    )));
-    return result
-      .map((response) => response?.data)
-      .filter((validationError) => validationError != null);
-  }
-
-  /**
-   * Registers a new rule service.
-   * @param name Rule service name.
-   * @param url Callback URL.
-   */
-  async registerRuleService(name: string, url: string) {
-    if (url.endsWith('/')) {
-      url = url.substring(0, url.length - 1);
-    }
-    const ruleService: RuleService = { name, url, id: randomUUIDv4() };
-    await this.persistence.dispatchRulesEvent(ruleService.id, ruleEvents.registerRuleService(ruleService));
-    return ruleService;
-  }
-
-  /**
-   * Unregisters an existing rule service.
+   * Dispatches a rules event.
    * @param id Rule service ID.
+   * @param event Event to be dispatched.
    */
-  async unregisterRuleService(id: string) {
-    const ruleService = await this.persistence.getRegisteredRuleServiceById(id);
-    if (ruleService == null) throw new NotFoundException(`Rule service "${id}" does not exist`);
-    await this.persistence.dispatchRulesEvent(id, ruleEvents.unregisterRuleService({ id }));
+  private async dispatchRulesEvent<T>(id: string, event: PersistenceEvent<T>): Promise<void> {
+    return await this.appendToStream(`rules.${id}`, event);
   }
 
   /**
-   * Returns all currently registered rule services.
+   * Appends a single event to the stream with the given name.
+   * @param streamName Stream name.
+   * @param event Event data.
    */
-  async getRegisteredRuleServices() {
-    return this.persistence.getAllRegisteredRuleServices();
+  private async appendToStream(streamName: string, event: { type: string, data: any, metadata?: MetadataType }): Promise<void> {
+    this.logger.debug(`Write to stream "${streamName}": ${JSON.stringify(event)}`);
+    // eslint-disable-next-line @typescript-eslint/no-empty-function
+    return await eventStore.appendToStream(streamName, jsonEvent(event)).then(() => {});
   }
+
+  /**
+   * Checks if the projection with the given name already exists.
+   * @param projectionName Name of the projection to be checked.
+   */
+  private async existsProjection(projectionName: string): Promise<boolean> {
+    const projections = await eventStore.listProjections();
+    for await (const projection of projections) {
+      if (projection.name === projectionName) {
+        return true;
+      }
+    }
+    return false;
+  }
+
 }

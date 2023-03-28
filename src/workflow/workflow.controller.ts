@@ -1,8 +1,18 @@
-import { Body, Controller, Get, Param, Post, Query } from '@nestjs/common';
-import { WorkflowDto, WorkflowInstanceDto, WorkflowInstanceTransitionDto } from './models';
-import { WorkflowService } from './workflow.service';
-import { ApiConsumes, ApiCreatedResponse, ApiNotFoundResponse, ApiOkResponse, ApiOperation, ApiParam, ApiProduces, ApiQuery, ApiTags } from '@nestjs/swagger';
-import { renameConsistencyId } from './utils';
+import { BadRequestException, Body, Controller, Get, Param, Post, Query } from "@nestjs/common";
+import {
+  ApiConsumes,
+  ApiCreatedResponse,
+  ApiNotFoundResponse,
+  ApiOkResponse,
+  ApiOperation,
+  ApiParam,
+  ApiProduces,
+  ApiQuery,
+  ApiTags
+} from "@nestjs/swagger";
+import { WorkflowDto, WorkflowInstanceTransitionDto } from "./models";
+import { renameConsistencyId } from "./utils";
+import { WorkflowService } from "./workflow.service";
 
 @ApiConsumes('application/json')
 @ApiProduces('application/json')
@@ -88,9 +98,8 @@ export class WorkflowController {
     description: 'The workflow with the given ID does not exist'
   })
   @ApiTags('Workflow Instances')
-  async launchWorkflowInstance(@Param('id') workflowId: string,
-                               @Body() instanceConfig?: WorkflowInstanceDto) {
-    return renameConsistencyId(await this.workflowService.launchWorkflowInstance(workflowId, instanceConfig));
+  async launchWorkflowInstance(@Param('id') workflowId: string) {
+    return renameConsistencyId(await this.workflowService.launchWorkflowInstance(workflowId));
   }
 
   @Post(':workflowId/instances/:instanceId/advance')
@@ -115,6 +124,14 @@ export class WorkflowController {
   async advanceWorkflowInstance(@Param('workflowId') workflowId: string,
                                 @Param('instanceId') instanceId: string,
                                 @Body() transitionConfig: WorkflowInstanceTransitionDto) {
+    if (transitionConfig.event.includes(".")) {
+      throw new BadRequestException("Invoking child events is not allowed!");
+    }
+
+    if (transitionConfig.event.startsWith("$")) {
+      throw new BadRequestException("Invoking internal events is not allowed!");
+    }
+
     return renameConsistencyId(await this.workflowService.advanceWorkflowInstance(workflowId, instanceId, transitionConfig));
   }
 
@@ -151,7 +168,7 @@ export class WorkflowController {
                             @Query('until') timestamp?: string) {
     const until = new Date(timestamp);
     if (!isNaN(until.getTime())) {
-      return renameConsistencyId(await this.workflowService.getWorkflowInstanceStateAt(instanceId, until));
+      return renameConsistencyId(await this.workflowService.getWorkflowInstanceStateAt(workflowId, instanceId, until));
     }
     return renameConsistencyId(await this.workflowService.getWorkflowInstance(workflowId, instanceId));
   }
@@ -188,7 +205,7 @@ export class WorkflowController {
                                                         @Param('instanceId') instanceId: string,
                                                         @Query('until') timestamp?: string) {
     const until = new Date(timestamp ?? Date.now());
-    return await this.workflowService.getWorkflowInstanceStateTransitionPayloadsUntil(instanceId, until);
+    return await this.workflowService.getWorkflowInstanceStateTransitionPayloadsUntil(workflowId, instanceId, until);
   }
 
   @Get(':workflowId/instances')

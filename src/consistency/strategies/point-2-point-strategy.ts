@@ -1,10 +1,11 @@
-import { Body, Controller, Logger, Post } from '@nestjs/common';
-import { HttpService } from '@nestjs/axios';
-import { firstValueFrom, Subject } from 'rxjs';
-import { ConsistencyStrategy } from './consistency-strategy';
-import { ConsistencyMessage } from '../models';
-import { environment } from '../../environment';
-import { randomEthereumAddress } from '../../core/utils';
+import { HttpService } from "@nestjs/axios";
+import { Body, Controller, Inject, Logger, Post } from "@nestjs/common";
+import { firstValueFrom, Subject } from "rxjs";
+import { CONSISTENCY_STRATEGY_PROVIDER_TOKEN } from "src/consistency/consistency.service";
+import { randomEthereumAddress } from "../../core/utils";
+import { environment } from "../../environment";
+import { ConsistencyMessage } from "../models";
+import { ConsistencyStrategy, Status } from "./consistency-strategy";
 
 export class Point2PointStrategy implements ConsistencyStrategy {
 
@@ -21,15 +22,15 @@ export class Point2PointStrategy implements ConsistencyStrategy {
   }
 
   /** @inheritDoc */
-  dispatch<T>(msg: ConsistencyMessage<T>) {
+  async dispatch<T>(msg: ConsistencyMessage<T>): Promise<Status> {
     msg = { ...msg, commitmentReference: randomEthereumAddress() };
     this.logger.debug(`Dispatching new message: ${JSON.stringify(msg)}`);
-    const result = Promise.all(environment.consistency.p2p.peerUrls
+    const result = await Promise.all(environment.consistency.p2p.peerUrls
       .map(async (url) => {
         this.logger.debug(`  - dispatching to "${url}"...`);
         return await firstValueFrom(this.http.post(url + '/_internal/consistency/p2p', msg));
       })
-    );
+    ).then(() => 'OK' as Status, () => 'NOK' as Status);
 
     // The sender also has to receive the message
     this.receiveConsistencyMessage(msg);
@@ -37,10 +38,14 @@ export class Point2PointStrategy implements ConsistencyStrategy {
   }
 
   /** @inheritDoc */
-  async getStatus() {
+  async getStatus(): Promise<Status> {
     return Promise.all(environment.consistency.p2p.peerUrls
       .map(async (url) => await firstValueFrom(this.http.get(url + '/ping')))
-    );
+    ).then(() => 'OK', () => 'NOK');
+  }
+
+  getOrganizationIdentifier(): string {
+    throw new Error("Method not implemented.");
   }
 }
 
@@ -50,11 +55,15 @@ export class Point2PointStrategy implements ConsistencyStrategy {
 @Controller('_internal/consistency/p2p')
 export class Point2PointStrategyController {
 
-  constructor(private p2pStrategy: Point2PointStrategy) {
+  constructor(@Inject(CONSISTENCY_STRATEGY_PROVIDER_TOKEN) private readonly p2pStrategy: Point2PointStrategy) {
   }
 
   @Post()
   receiveConsistencyMessage<T>(@Body() msg: ConsistencyMessage<T>) {
+    if (!(this.p2pStrategy instanceof Point2PointStrategy)) {
+      throw new Error('This endpoint is only available when using the Point2Point (p2p) consistency strategy!');
+    }
+
     return this.p2pStrategy.receiveConsistencyMessage(msg);
   }
 }

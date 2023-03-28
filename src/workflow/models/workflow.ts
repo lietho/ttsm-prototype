@@ -1,16 +1,21 @@
-import { MachineConfig } from 'xstate';
-import { WorkflowConfig } from './workflow-config';
-import { ConsistencyEntity } from '../../consistency';
-import { RuleServiceValidationError } from '../../rules';
+import { SupportedWorkflowModels } from "src/workflow/models/workflow.dto";
+import { ConsistencyEntity } from "../../consistency";
+import { RuleServiceValidationError } from "../../rules";
+import { WorkflowConfig } from "./workflow-config";
 
 /**
  * The derived status of a workflow.
  */
 export type WorkflowStatus = 'PENDING' | 'ACCEPTED' | 'REJECTED';
 
-export interface Workflow extends ConsistencyEntity {
+export interface WorkflowContext {
+  id: string;
+  organizationId: string;
+}
+
+export interface Workflow extends ConsistencyEntity, WorkflowContext {
   config?: Partial<WorkflowConfig>;
-  workflowModel: MachineConfig<any, any, any>;
+  workflowModel: SupportedWorkflowModels;
   acceptedByRuleServices?: boolean;
   acceptedByParticipants?: boolean;
   participantsAccepted?: WorkflowProposalParticipantApproval[];

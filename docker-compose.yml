@@ -3,7 +3,7 @@ version: '3.7'
 services:
   eventstore.db:
     container_name: eventstore-${STACK_POSTFIX}
-    image: eventstore/eventstore:21.6.0-buster-slim
+    image: eventstore/eventstore:21.10.9-buster-slim
     restart: unless-stopped
     environment:
       - EVENTSTORE_CLUSTER_SIZE=1
@@ -33,10 +33,17 @@ services:
       - CONSISTENCY_EVM_CONTRACT_ADDRESS
       - CONSISTENCY_EVM_CLIENT_ADDRESS
       - PERSISTENCE_SERVICE_URL
+      - PERSISTENCE_ORBITDB_ID
+      - PERSISTENCE_ORBITDB_IPFS_PORT
+      - PERSISTENCE_ORBITDB_IPFS_PORT_WS
+      - RULES_SERVICE_URL
       - INTEGRATIONS_ZEEBE_ADDRESS
       - INTEGRATIONS_ZEEBE_AUTHORIZATION_SERVER_URL
       - INTEGRATIONS_ZEEBE_AUDIENCE
       - INTEGRATIONS_ZEEBE_CLIENT_ID
       - INTEGRATIONS_ZEEBE_CLIENT_SECRET
+      - CONSISTENCY_EVM_SIGNER_PRIVATE_KEY
     ports:
       - '${STACK_TTSM_PORT}:3000'
+      - '${PERSISTENCE_ORBITDB_IPFS_PORT}'
+      - '${PERSISTENCE_ORBITDB_IPFS_PORT_WS}'

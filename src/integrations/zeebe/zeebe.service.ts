@@ -82,13 +82,7 @@ export class ZeebeService implements OnModuleInit, OnModuleDestroy {
     this.logger.log(`Creating projection for Zeebe integration "${this.zeebeProjectionName}"`);
     await this.persistence.createProjection(this.zeebeProjectionName, this.zeebeProjection);
 
-    this.persistence.subscribeToAll(async (resolvedEvent) => {
-      const { event } = resolvedEvent;
-      if (event == null) return;
-
-      const eventType = event?.type;
-      const eventData = event.data as unknown;
-
+    this.persistence.subscribeToAll(async (eventType: string, eventData: unknown) => {
       if (persistenceEvents.receivedWorkflow.sameAs(eventType)) await this.createWorkflow(eventData as WorkflowProposal);
       if (persistenceEvents.receivedWorkflowInstance.sameAs(eventType)) await this.launchWorkflowInstance(eventData as WorkflowInstanceProposal);
     });
