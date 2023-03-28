@@ -28,12 +28,24 @@ export class OrbitDBStrategy implements ConsistencyStrategy, OnApplicationBootst
   readonly actions$ = new Subject<ConsistencyMessage<unknown>>();
   private readonly destroySubject = new Subject<void>();
 
+  private initialized = false;
+
   constructor(private http: HttpService,
               @Inject(OrbitDBEventLogManager) private dbManager: OrbitDBEventLogManager<ConsistencyMessage<unknown>>,
               private persistenceService: PersistenceService) {
   }
 
   async onApplicationBootstrap() {
+    await this.init();
+  }
+
+  async init() {
+    if (this.initialized) {
+      return;
+    }
+
+    this.initialized = true;
+
     await firstValueFrom(this.dbManager.managerReady$);
     await this.createInitialDatabases();
 
@@ -53,6 +65,7 @@ export class OrbitDBStrategy implements ConsistencyStrategy, OnApplicationBootst
     return "OK";
   }
 
+
   /** @inheritDoc */
   async dispatch<T>(msg: ConsistencyMessage<T>): Promise<Status> {
     // create external events database connections on local events
@@ -69,8 +82,7 @@ export class OrbitDBStrategy implements ConsistencyStrategy, OnApplicationBootst
 
     // send to external participant
     if (consistencyEvents.advanceWorkflowInstance.sameAs(msg)) {
-      const transition = msg.payload as ExternalWorkflowInstanceTransition;
-      return await this.sendWorkflowToExternalParticipants(transition)
+      return await this.sendWorkflowToExternalParticipants(msg as ConsistencyMessage<ExternalWorkflowInstanceTransition>)
         .then(() => "OK", () => "NOK");
     }
 
@@ -105,13 +117,15 @@ export class OrbitDBStrategy implements ConsistencyStrategy, OnApplicationBootst
     return this.dbManager.identityId;
   }
 
-  private async sendWorkflowToExternalParticipants(transition: ExternalWorkflowInstanceTransition) {
+  private async sendWorkflowToExternalParticipants(msg: ConsistencyMessage<ExternalWorkflowInstanceTransition>) {
+    const transition = msg.payload;
+
     try {
       const externalEventsDBName = transition.instanceId != null
         ? await this.connectToWorkflowInstanceExternalEventsDatabase(transition.organizationId, transition.workflowId, transition.instanceId)
         : await this.connectToWorkflowExternalEventsDatabase(transition.organizationId, transition.workflowId);
 
-      await this.dbManager.addEvent(externalEventsDBName, consistencyEvents.advanceWorkflowInstance(transition), false);
+      await this.dbManager.addEvent(externalEventsDBName, msg, false);
 
       this.dbManager.removeConnectionAfterTimeout(
         externalEventsDBName,
