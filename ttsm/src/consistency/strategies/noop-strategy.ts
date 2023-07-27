@@ -24,7 +24,7 @@ export class NoopStrategy implements ConsistencyStrategy {
   async dispatch<T>(msg: ConsistencyMessage<T>) {
     this.logger.log(`Dispatching new message: ${JSON.stringify(msg)}`);
     setTimeout(() => {
-      msg = { ...msg, commitmentReference: randomEthereumAddress() };
+      msg = { ...msg, commitment: { reference: randomEthereumAddress(), timestamp: new Date() } };
       this.logger.log(`Consistency message received: ${JSON.stringify(msg)}`);
       this.actions$.next(msg);
     }, this.delay);

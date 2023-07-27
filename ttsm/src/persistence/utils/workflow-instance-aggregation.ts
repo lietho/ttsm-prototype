@@ -70,7 +70,7 @@ export function aggregateAllWorkflowInstanceEvents(events: PersistenceEvent<unkn
         result[event.data.id].participantsAccepted = [];
         result[event.data.id].participantsRejected = [];
         result[event.data.id].currentState = event.data.to;
-        result[event.data.id].commitmentReference = event.data.commitmentReference;
+        result[event.data.id].commitment = event.data.commitment;
         result[event.data.id].acceptedByParticipants = undefined;
         result[event.data.id].acceptedByRuleServices = undefined;
       }
@@ -81,7 +81,7 @@ export function aggregateAllWorkflowInstanceEvents(events: PersistenceEvent<unkn
         result[event.data.id].participantsAccepted = [];
         result[event.data.id].participantsRejected = [];
         result[event.data.id].currentState = event.data.to;
-        result[event.data.id].commitmentReference = event.data.commitmentReference;
+        result[event.data.id].commitment = event.data.commitment;
         result[event.data.id].acceptedByParticipants = undefined;
         result[event.data.id].acceptedByRuleServices = undefined;
       }
@@ -107,7 +107,7 @@ export function aggregateAllWorkflowInstanceEvents(events: PersistenceEvent<unkn
       }
     });
     handleEvent(eventTypes.transitionRejected, event, event => {
-      result[event.data.id].commitmentReference = event.data.commitmentReference;
+      result[event.data.id].commitment = event.data.commitment;
       result[event.data.id].acceptedByParticipants = false;
     });
 

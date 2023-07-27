@@ -6,6 +6,7 @@ import { State } from "xstate";
 import { PersistenceService } from "../persistence";
 import * as persistenceEvents from "../persistence/persistence.events";
 import {
+  Commitment,
   ExternalWorkflowInstanceTransition,
   OriginatingParticipant,
   SupportedWorkflowModels,
@@ -157,56 +158,56 @@ export class ConsistencyService implements OnModuleInit {
     // Messages dispatched by other participants regarding workflow specifications
     this.actions$
       .pipe(ofConsistencyMessage(consistencyEvents.proposeWorkflow))
-      .subscribe(({ payload, commitmentReference }) => this.onReceivedWorkflow(payload, commitmentReference));
+      .subscribe(({ payload, commitment }) => this.onReceivedWorkflow(payload, commitment));
     this.actions$
       .pipe(ofConsistencyMessage(consistencyEvents.acceptWorkflow))
       .subscribe(({
                     payload,
-                    commitmentReference
-                  }) => this.onParticipantAcceptedWorkflow(payload, commitmentReference));
+                    commitment
+                  }) => this.onParticipantAcceptedWorkflow(payload, commitment));
     this.actions$
       .pipe(ofConsistencyMessage(consistencyEvents.rejectWorkflow))
       .subscribe(({
                     payload,
-                    commitmentReference
-                  }) => this.onParticipantRejectedWorkflow(payload, commitmentReference));
+                    commitment
+                  }) => this.onParticipantRejectedWorkflow(payload, commitment));
 
     // Messages dispatched by other participants regarding workflow instances
     this.actions$
       .pipe(ofConsistencyMessage(consistencyEvents.launchWorkflowInstance))
-      .subscribe(({ payload, commitmentReference }) => this.onReceivedWorkflowInstance(payload, commitmentReference));
+      .subscribe(({ payload, commitment }) => this.onReceivedWorkflowInstance(payload, commitment));
     this.actions$
       .pipe(ofConsistencyMessage(consistencyEvents.acceptWorkflowInstance))
       .subscribe(({
                     payload,
-                    commitmentReference
-                  }) => this.onParticipantAcceptedWorkflowInstance(payload, commitmentReference));
+                    commitment
+                  }) => this.onParticipantAcceptedWorkflowInstance(payload, commitment));
     this.actions$
       .pipe(ofConsistencyMessage(consistencyEvents.rejectWorkflowInstance))
       .subscribe(({
                     payload,
-                    commitmentReference
-                  }) => this.onParticipantRejectedWorkflowInstance(payload, commitmentReference));
+                    commitment
+                  }) => this.onParticipantRejectedWorkflowInstance(payload, commitment));
 
     // Messages dispatched by other participants regarding workflow instance transitions
     this.actions$
       .pipe(ofConsistencyMessage(consistencyEvents.advanceWorkflowInstance))
       .subscribe(({
                     payload,
-                    commitmentReference
-                  }) => this.onAdvanceExternalWorkflowInstance(payload, commitmentReference));
+                    commitment
+                  }) => this.onAdvanceExternalWorkflowInstance(payload, commitment));
     this.actions$
       .pipe(ofConsistencyMessage(consistencyEvents.acceptTransition))
       .subscribe(({
                     payload,
-                    commitmentReference
-                  }) => this.onParticipantAcceptedTransition(payload, commitmentReference));
+                    commitment
+                  }) => this.onParticipantAcceptedTransition(payload, commitment));
     this.actions$
       .pipe(ofConsistencyMessage(consistencyEvents.rejectTransition))
       .subscribe(({
                     payload,
-                    commitmentReference
-                  }) => this.onParticipantRejectedTransition(payload, commitmentReference));
+                    commitment
+                  }) => this.onParticipantRejectedTransition(payload, commitment));
 
   }
 
@@ -273,108 +274,108 @@ export class ConsistencyService implements OnModuleInit {
   /**
    * Some counterparty wants to create a new workflow definition.
    * @param proposal
-   * @param commitmentReference
+   * @param commitment
    * @private
    */
-  private async onReceivedWorkflow(proposal: WorkflowProposal, commitmentReference: string) {
+  private async onReceivedWorkflow(proposal: WorkflowProposal, commitment: Commitment) {
     await this.persistence.dispatchWorkflowEvent(proposal.consistencyId, persistenceEvents.receivedWorkflow({
       ...proposal,
-      commitmentReference
+      commitment
     }));
   }
 
   /**
    * Some counterparty accepted the proposed workflow definition.
    * @param approval
-   * @param commitmentReference
+   * @param commitment
    * @private
    */
-  private async onParticipantAcceptedWorkflow(approval: WorkflowProposalParticipantApproval, commitmentReference: string) {
+  private async onParticipantAcceptedWorkflow(approval: WorkflowProposalParticipantApproval, commitment: Commitment) {
     await this.persistence.dispatchWorkflowEvent(approval.id, persistenceEvents.workflowAcceptedByParticipant({
       ...approval,
-      commitmentReference
+      commitment
     }));
     // Dispatch the follow up event if ALL required parties accepted
     await this.persistence.dispatchWorkflowEvent(approval.id, persistenceEvents.workflowAccepted({
       ...approval,
-      commitmentReference
+      commitment
     }));
   }
 
   /**
    * Some counterparty rejected the proposed workflow definition.
    * @param denial
-   * @param commitmentReference
+   * @param commitment
    * @private
    */
-  private async onParticipantRejectedWorkflow(denial: WorkflowProposalParticipantDenial, commitmentReference: string) {
+  private async onParticipantRejectedWorkflow(denial: WorkflowProposalParticipantDenial, commitment: Commitment) {
     await this.persistence.dispatchWorkflowEvent(denial.id, persistenceEvents.workflowRejectedByParticipant({
       ...denial,
-      commitmentReference
+      commitment
     }));
     // Dispatch the follow up event if ANY of the parties rejected
     await this.persistence.dispatchWorkflowEvent(denial.id, persistenceEvents.workflowRejected({
       ...denial,
-      commitmentReference
+      commitment
     }));
   }
 
   /**
    * Some counterparty wants to create a new workflow instance.
    * @param proposal
-   * @param commitmentReference
+   * @param commitment
    * @private
    */
-  private async onReceivedWorkflowInstance(proposal: WorkflowInstanceProposal, commitmentReference: string) {
+  private async onReceivedWorkflowInstance(proposal: WorkflowInstanceProposal, commitment: Commitment) {
     await this.persistence.dispatchInstanceEvent(proposal.consistencyId, persistenceEvents.receivedWorkflowInstance({
       ...proposal,
-      commitmentReference
+      commitment
     }));
   }
 
   /**
    * Some counterparty accepted the proposed workflow instance.
    * @param approval
-   * @param commitmentReference
+   * @param commitment
    * @private
    */
-  private async onParticipantAcceptedWorkflowInstance(approval: WorkflowInstanceParticipantApproval, commitmentReference: string) {
+  private async onParticipantAcceptedWorkflowInstance(approval: WorkflowInstanceParticipantApproval, commitment: Commitment) {
     await this.persistence.dispatchInstanceEvent(approval.id, persistenceEvents.workflowInstanceAcceptedByParticipant({
       ...approval,
-      commitmentReference
+      commitment
     }));
     // Dispatch the follow up event if ALL required parties accepted
     await this.persistence.dispatchInstanceEvent(approval.id, persistenceEvents.workflowInstanceAccepted({
       ...approval,
-      commitmentReference
+      commitment
     }));
   }
 
   /**
    * Some counterparty rejected the proposed workflow instance.
    * @param denial
-   * @param commitmentReference
+   * @param commitment
    * @private
    */
-  private async onParticipantRejectedWorkflowInstance(denial: WorkflowInstanceParticipantDenial, commitmentReference: string) {
+  private async onParticipantRejectedWorkflowInstance(denial: WorkflowInstanceParticipantDenial, commitment: Commitment) {
     await this.persistence.dispatchInstanceEvent(denial.id, persistenceEvents.workflowInstanceRejectedByParticipant({
       ...denial,
-      commitmentReference
+      commitment
     }));
     // Dispatch the follow up event if ANY of the parties rejected
     await this.persistence.dispatchInstanceEvent(denial.id, persistenceEvents.workflowInstanceRejected({
       ...denial,
-      commitmentReference
+      commitment
     }));
   }
 
   /**
    * Some counterparty wants to advance a certain workflow instance from one state to another.
    * @param transition
-   * @param commitmentReference
+   * @param commitment
    * @private
    */
-  private async onAdvanceExternalWorkflowInstance(transition: ExternalWorkflowInstanceTransition, commitmentReference: string) {
+  private async onAdvanceExternalWorkflowInstance(transition: ExternalWorkflowInstanceTransition, commitment: Commitment) {
     this.log.debug(`Received external transition:`, transition);
 
     const workflow = await this.persistence.getWorkflowById(transition.workflowId);
@@ -384,7 +385,7 @@ export class ConsistencyService implements OnModuleInit {
         workflowId: transition.originatingParticipant.workflowId,
         organizationId: this.consistencyStrategy.getOrganizationIdentifier(),
         transition: transition,
-        commitmentReference,
+        commitment,
         reasons: [`Workflow with ID "${transition.workflowId}" does not exist`]
       }));
     }
@@ -398,7 +399,7 @@ export class ConsistencyService implements OnModuleInit {
           workflowId: transition.originatingParticipant.workflowId,
           organizationId: this.consistencyStrategy.getOrganizationIdentifier(),
           transition: transition,
-          commitmentReference,
+          commitment,
           reasons: [`Instance with ID "${transition.instanceId}" does not exist`]
         }));
       }
@@ -423,7 +424,7 @@ export class ConsistencyService implements OnModuleInit {
           workflowId: transition.originatingParticipant.workflowId,
           organizationId: this.consistencyStrategy.getOrganizationIdentifier(),
           transition: transition,
-          commitmentReference,
+          commitment,
           reasons: [`An error occurred: ${ex.message}`]
         }));
       }
@@ -433,41 +434,41 @@ export class ConsistencyService implements OnModuleInit {
   /**
    * Accepts external state transition.
    * @param approval
-   * @param commitmentReference
+   * @param commitment
    * @private
    */
-  private async onParticipantAcceptedTransition(approval: WorkflowInstanceTransitionParticipantApproval, commitmentReference: string) {
+  private async onParticipantAcceptedTransition(approval: WorkflowInstanceTransitionParticipantApproval, commitment: Commitment) {
     const ackTransitionName = `${EVENT_NAME_EXTERNAL_PARTICIPANT_ACK_PREFIX}${approval.transition.originatingParticipant.externalIdentifier}`;
     await this.workflowService.onExternalTransitionAcknowledge(approval.workflowId, approval.id, { event: ackTransitionName }, approval.originatingParticipant);
 
     await this.persistence.dispatchTransitionEvent(approval.id, persistenceEvents.transitionAcceptedByParticipant({
       ...approval,
-      commitmentReference
+      commitment
     }));
 
     // TODO: Dispatch the follow up event if ALL required parties accepted
     await this.persistence.dispatchTransitionEvent(approval.id, persistenceEvents.transitionAccepted({
       ...approval,
-      commitmentReference
+      commitment
     }));
   }
 
   /**
    * Rejects external state transition.
    * @param denial
-   * @param commitmentReference
+   * @param commitment
    * @private
    */
-  private async onParticipantRejectedTransition(denial: WorkflowInstanceTransitionParticipantDenial, commitmentReference: string) {
+  private async onParticipantRejectedTransition(denial: WorkflowInstanceTransitionParticipantDenial, commitment: Commitment) {
     await this.persistence.dispatchTransitionEvent(denial.id, persistenceEvents.transitionRejectedByParticipant({
       ...denial,
-      commitmentReference
+      commitment
     }));
 
     // Dispatch the follow up event if ANY of the parties rejected
     await this.persistence.dispatchTransitionEvent(denial.id, persistenceEvents.transitionRejected({
       ...denial,
-      commitmentReference
+      commitment
     }));
   }
 

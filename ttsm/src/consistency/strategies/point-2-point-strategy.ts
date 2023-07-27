@@ -23,7 +23,7 @@ export class Point2PointStrategy implements ConsistencyStrategy {
 
   /** @inheritDoc */
   async dispatch<T>(msg: ConsistencyMessage<T>): Promise<Status> {
-    msg = { ...msg, commitmentReference: randomEthereumAddress() };
+    msg = { ...msg, commitment: {reference: randomEthereumAddress(), timestamp: new Date() }};
     this.logger.debug(`Dispatching new message: ${JSON.stringify(msg)}`);
     const result = await Promise.all(environment.consistency.p2p.peerUrls
       .map(async (url) => {

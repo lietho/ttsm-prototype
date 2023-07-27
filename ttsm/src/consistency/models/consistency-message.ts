@@ -1,3 +1,5 @@
+import { Commitment } from "src/workflow";
+
 /**
  * A single message used by the consistency layer.
  */
@@ -16,5 +18,5 @@ export interface ConsistencyMessage<T> {
   /**
    * Commitment reference
    */
-  commitmentReference?: string | any;
+  commitment?: Commitment;
 }

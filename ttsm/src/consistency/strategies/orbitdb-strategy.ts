@@ -68,6 +68,9 @@ export class OrbitDBStrategy implements ConsistencyStrategy, OnApplicationBootst
 
   /** @inheritDoc */
   async dispatch<T>(msg: ConsistencyMessage<T>): Promise<Status> {
+
+    msg.commitment = { timestamp: new Date(), reference: "N/A" };
+
     // create external events database connections on local events
     if (consistencyEvents.proposeWorkflow.sameAs(msg)) {
       return await this.createWorkflowExternalEventsDatabase((msg.payload as WorkflowProposal).id)

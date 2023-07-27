@@ -2,6 +2,7 @@ import { State } from "xstate";
 import { ConsistencyEntity } from "../../consistency";
 import { RuleServiceResponse } from "../../rules";
 import {
+  Commitment,
   WorkflowInstanceTransitionParticipantApproval,
   WorkflowInstanceTransitionParticipantDenial
 } from "./workflow-instance-transition";
@@ -45,13 +46,13 @@ export interface WorkflowInstanceRuleServiceDenial extends WorkflowInstanceConte
 
 export interface WorkflowInstanceParticipantApproval extends WorkflowInstanceContext {
   id: string;
-  commitmentReference?: string;
+  commitment?: Commitment;
   proposal: WorkflowInstanceProposal;
 }
 
 export interface WorkflowInstanceParticipantDenial extends WorkflowInstanceContext {
   id: string;
-  commitmentReference?: string;
+  commitment?: Commitment;
   proposal: WorkflowInstanceProposal;
   reasons?: string[];
 }

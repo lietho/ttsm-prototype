@@ -13,7 +13,7 @@ export interface WorkflowInstanceTransition extends WorkflowInstanceTransitionCo
   to: State<any, any>;
   event: string;
   payload?: object;
-  commitmentReference?: string;
+  commitment: Commitment;
   originatingExternalTransition?: ExternalWorkflowInstanceTransition;
   originatingExternalTransitionApproval?: WorkflowInstanceTransitionParticipantApproval;
 }
@@ -50,12 +50,17 @@ export interface WorkflowInstanceTransitionParticipantApproval extends WorkflowI
   id: string;
   transition: ExternalWorkflowInstanceTransition;
   originatingParticipant: OriginatingParticipant;
-  commitmentReference?: string;
+  commitment?: Commitment;
 }
 
 export interface WorkflowInstanceTransitionParticipantDenial extends WorkflowInstanceTransitionContext {
   id: string;
   transition: ExternalWorkflowInstanceTransition;
-  commitmentReference?: string;
+  commitment?: Commitment;
   reasons?: string[];
+}
+
+export interface Commitment {
+  reference: string;
+  timestamp: Date;
 }

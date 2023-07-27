@@ -2,6 +2,7 @@ import { SupportedWorkflowModels } from "src/workflow/models/workflow.dto";
 import { ConsistencyEntity } from "../../consistency";
 import { RuleServiceResponse } from "../../rules";
 import { WorkflowConfig } from "./workflow-config";
+import { Commitment } from "./workflow-instance-transition";
 
 /**
  * The derived status of a workflow.
@@ -41,14 +42,14 @@ export interface WorkflowProposalRuleServiceDenial {
 export interface WorkflowProposalParticipantApproval {
   id: string;
   proposal: WorkflowProposal;
-  commitmentReference?: string;
+  commitment?: Commitment;
 }
 
 export interface WorkflowProposalParticipantDenial {
   id: string;
   proposal: WorkflowProposal;
   reasons?: string[];
-  commitmentReference?: string;
+  commitment?: Commitment;
 }
 
 export type WorkflowProposalApproval = WorkflowProposalParticipantApproval;

@@ -76,7 +76,7 @@ export class OrbitDBEvmStrategy implements ConsistencyStrategy, OnApplicationBoo
 
     if (OrbitDBEvmStrategy.needsCommitment(msg)) {
       // Retrieve transaction receipt to check if log contains correct message hash
-      const transaction = await this.web3.eth.getTransactionReceipt(msg.commitmentReference);
+      const transaction = await this.web3.eth.getTransactionReceipt(msg.commitment.reference);
 
       // There is no transaction log available, that's weird...
       if (transaction.logs.length <= 0) {
@@ -121,7 +121,8 @@ export class OrbitDBEvmStrategy implements ConsistencyStrategy, OnApplicationBoo
           gas
         });
 
-      msg.commitmentReference = transactionResult.transactionHash;
+      const block = await this.web3.eth.getBlock(transactionResult.blockNumber);
+      msg.commitment = { reference: transactionResult.transactionHash, timestamp: new Date(+block.timestamp * 1000) };
       this.logger.debug(`Sending message with commitment reference: ${JSON.stringify(msg)}`);
     } else {
       this.logger.debug(`Sending message without commitment reference: ${JSON.stringify(msg)}`);

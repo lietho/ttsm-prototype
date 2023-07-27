@@ -61,7 +61,7 @@ export class EvmStrategy implements ConsistencyStrategy, OnModuleInit {
     this.logger.debug(`Consistency message received: ${JSON.stringify(msg)}`);
 
     // Retrieve transaction receipt to check if log contains correct message hash
-    const transaction = await this.web3.eth.getTransactionReceipt(msg.commitmentReference.transactionHash);
+    const transaction = await this.web3.eth.getTransactionReceipt(msg.commitment.reference);
 
     // There is no transaction log available, that's weird...
     if (transaction.logs.length <= 0) {
@@ -100,10 +100,10 @@ export class EvmStrategy implements ConsistencyStrategy, OnModuleInit {
       .store(messageHash)
       .send({ from: environment.consistency.evm.clientAddress });
     const finalityCompletionTime = performance.now();
-    msg.commitmentReference = {
-      ...transactionResult,
-      finalityDuration: (finalityCompletionTime - finalityRequestTime)
-    };
+
+    const block = await this.web3.eth.getBlock(transactionResult.blockNumber);
+    msg.commitment = { reference: transactionResult.transactionHash, timestamp: new Date(+block.timestamp * 1000) };
+
     this.logger.debug(`Sending message with commitment reference: ${JSON.stringify(msg)}`);
 
     // Send the message to all peers
