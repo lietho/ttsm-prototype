@@ -23,7 +23,7 @@ services:
     depends_on:
       - eventstore.db
     build:
-      context: .
+      context: ./ttsm
       dockerfile: Dockerfile
     environment:
       - CONSISTENCY_STRATEGY
