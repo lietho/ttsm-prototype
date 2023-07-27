@@ -25,6 +25,7 @@ async function bootstrap() {
     favicon: 'https://upload.wikimedia.org/wikipedia/commons/a/ab/Swagger-logo.png'
   };
   await RedocModule.setup('/docs', app, document, redocOptions);
+  SwaggerModule.setup('/api', app, document);
 
   await app.listen(environment.servicePort);
 }

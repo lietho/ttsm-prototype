@@ -1,6 +1,6 @@
 import { SupportedWorkflowModels } from "src/workflow/models/workflow.dto";
 import { ConsistencyEntity } from "../../consistency";
-import { RuleServiceValidationError } from "../../rules";
+import { RuleServiceResponse } from "../../rules";
 import { WorkflowConfig } from "./workflow-config";
 
 /**
@@ -35,7 +35,7 @@ export interface WorkflowProposalRuleServiceApproval {
 export interface WorkflowProposalRuleServiceDenial {
   id: string;
   proposal: WorkflowProposal;
-  validationErrors: RuleServiceValidationError[];
+  validationErrors: RuleServiceResponse[];
 }
 
 export interface WorkflowProposalParticipantApproval {

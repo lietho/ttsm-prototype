@@ -49,6 +49,7 @@ export const environment = {
     }
   },
   rules: {
-    serviceUrl: process.env.RULES_SERVICE_URL ?? 'esdb://localhost:2113?tls=false'
+    serviceUrl: process.env.RULES_SERVICE_URL ?? 'esdb://localhost:2113?tls=false',
+    ruleEvaluatorBaseUrl: process.env.RULES_EVALUATOR_BASE_URL ?? 'http://localhost:8080'
   }
 };

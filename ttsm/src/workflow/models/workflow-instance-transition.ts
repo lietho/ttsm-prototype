@@ -1,5 +1,5 @@
 import { State } from "xstate";
-import { RuleServiceValidationError } from "../../rules";
+import { RuleServiceResponse } from "../../rules";
 
 export interface WorkflowInstanceTransitionContext {
   workflowId: string;
@@ -43,7 +43,7 @@ export interface WorkflowInstanceTransitionRuleServiceApproval extends WorkflowI
 export interface WorkflowInstanceTransitionRuleServiceDenial extends WorkflowInstanceTransitionContext {
   id: string;
   transition: WorkflowInstanceTransition;
-  validationErrors: RuleServiceValidationError[];
+  validationErrors: RuleServiceResponse[];
 }
 
 export interface WorkflowInstanceTransitionParticipantApproval extends WorkflowInstanceTransitionContext {

@@ -1,3 +1,3 @@
 export * from './register-rule-service';
 export * from './rule-service';
-export * from './rule-service-validation-error';
+export * from './rule-service-response';

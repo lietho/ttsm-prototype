@@ -1,6 +1,6 @@
 import { State } from "xstate";
 import { ConsistencyEntity } from "../../consistency";
-import { RuleServiceValidationError } from "../../rules";
+import { RuleServiceResponse } from "../../rules";
 import {
   WorkflowInstanceTransitionParticipantApproval,
   WorkflowInstanceTransitionParticipantDenial
@@ -40,7 +40,7 @@ export interface WorkflowInstanceRuleServiceApproval extends WorkflowInstanceCon
 export interface WorkflowInstanceRuleServiceDenial extends WorkflowInstanceContext {
   id: string;
   proposal: WorkflowInstanceProposal;
-  validationErrors: RuleServiceValidationError[];
+  validationErrors: RuleServiceResponse[];
 }
 
 export interface WorkflowInstanceParticipantApproval extends WorkflowInstanceContext {

@@ -9,7 +9,7 @@ import { PersistenceEvent, PersistenceService } from "../persistence";
 import * as persistenceEvents from "../persistence/persistence.events";
 import { WorkflowInstanceProposal, WorkflowInstanceTransition, WorkflowProposal } from "../workflow";
 import { client as eventStore, connect as connectToEventStore } from "./eventstoredb";
-import { RuleService, RuleServiceValidationError } from "./models";
+import { RuleService, RuleServiceResponse } from "./models";
 import * as ruleEvents from "./rules.events";
 
 @Injectable()
@@ -49,13 +49,13 @@ export class RulesService implements OnModuleInit {
    * Checks if the proposed workflow is valid.
    * @param proposal Workflow to be proposed.
    */
-  async validateWorkflowProposal(proposal: WorkflowProposal): Promise<RuleServiceValidationError[]> {
+  async validateWorkflowProposal(proposal: WorkflowProposal): Promise<RuleServiceResponse[]> {
     const ruleServices = await this.getAllRegisteredRuleServices();
     if (ruleServices.length <= 0) {
       return [];
     }
     const result = await firstValueFrom(combineLatest(ruleServices.map((curr) => this.http
-      .post<RuleServiceValidationError>(`${curr.url}/check-new-workflow`, proposal)
+      .post<RuleServiceResponse>(`${curr.url}/check-new-workflow`, proposal)
       .pipe(catchError(() => {
         this.logger.warn(`Rule service "${curr.name}" does not respond on ${curr.url} - ignore`);
         return of(null);
@@ -63,20 +63,20 @@ export class RulesService implements OnModuleInit {
     )));
     return result
       .map((response) => response?.data)
-      .filter((validationError) => validationError != null);
+      .filter((response) => !response?.valid);
   }
 
   /**
    * Checks if the launch of a new workflow instance is allowed.
    * @param proposal Workflow instance to be launched.
    */
-  async validateWorkflowInstance(proposal: WorkflowInstanceProposal): Promise<RuleServiceValidationError[]> {
+  async validateWorkflowInstance(proposal: WorkflowInstanceProposal): Promise<RuleServiceResponse[]> {
     const ruleServices = await this.getAllRegisteredRuleServices();
     if (ruleServices.length <= 0) {
       return [];
     }
     const result = await firstValueFrom(combineLatest(ruleServices.map((curr) => this.http
-      .post<RuleServiceValidationError>(`${curr.url}/check-new-instance`, proposal)
+      .post<RuleServiceResponse>(`${curr.url}/check-new-instance`, proposal)
       .pipe(catchError(() => {
         this.logger.warn(`Rule service "${curr.name}" does not respond on ${curr.url} - ignore`);
         return of(null);
@@ -84,14 +84,14 @@ export class RulesService implements OnModuleInit {
     )));
     return result
       .map((response) => response?.data)
-      .filter((validationError) => validationError != null);
+      .filter((response) => !response?.valid);
   }
 
   /**
    * Checks if a state transition is allowed.
    * @param transition Workflow instance state transition.
    */
-  async validateInstanceTransition(transition: WorkflowInstanceTransition): Promise<RuleServiceValidationError[]> {
+  async validateInstanceTransition(transition: WorkflowInstanceTransition): Promise<RuleServiceResponse[]> {
     const ruleServices = await this.getAllRegisteredRuleServices();
     if (ruleServices.length <= 0) {
       return [];
@@ -105,7 +105,7 @@ export class RulesService implements OnModuleInit {
     )));
     return result
       .map((response) => response?.data)
-      .filter((validationError) => validationError != null);
+      .filter((response) => !response?.valid);
   }
 
   /**
