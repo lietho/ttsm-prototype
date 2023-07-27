@@ -47,3 +47,10 @@ services:
       - '${STACK_TTSM_PORT}:3000'
       - '${PERSISTENCE_ORBITDB_IPFS_PORT}'
       - '${PERSISTENCE_ORBITDB_IPFS_PORT_WS}'
+  rule-evaluator:
+    container_name: rule-evaluator-${STACK_POSTFIX}
+    build:
+      context: ./feel-rule-evaluator
+      dockerfile: Dockerfile
+    ports:
+      - '${STACK_RULE_EVALUATOR_PORT}:8080'
