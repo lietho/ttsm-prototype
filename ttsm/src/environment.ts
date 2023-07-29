@@ -4,7 +4,7 @@ import { SupportedPersistenceStrategies } from "./persistence";
 export const environment = {
   servicePort: process.env.TTSM_SERVICE_PORT ?? 3000,
   consistency: {
-    strategy: (process.env.CONSISTENCY_STRATEGY ?? 'noop') as SupportedConsistencyStrategies,
+    strategy: (process.env.CONSISTENCY_STRATEGY ?? 'orbitdb') as SupportedConsistencyStrategies,
     p2p: {
       peerUrls: (process.env.CONSISTENCY_P2P_PEER_URLS?.split(' ')) ?? ['http://localhost:3001']
     },
@@ -39,12 +39,12 @@ export const environment = {
       serviceUrl: process.env.PERSISTENCE_SERVICE_URL ?? 'esdb://localhost:2113?tls=false',
     },
     orbitDB: {
-      localDirectory: process.env.PERSISTENCE_ORBITDB_DIRECTORY ?? 'data/orbitdb',
+      localDirectory: process.env.PERSISTENCE_ORBITDB_DIRECTORY ?? '/data/orbitdb',
       id: process.env.PERSISTENCE_ORBITDB_ID ?? 'organization-a',
       ipfs: {
         port: process.env.PERSISTENCE_ORBITDB_IPFS_PORT ?? 4002,
         portWebSocket: process.env.PERSISTENCE_ORBITDB_IPFS_PORT_WS ?? 4003,
-        localDirectory: process.env.PERSISTENCE_ORBITDB_IPFS_DIRECTORY ?? 'data/ipfs'
+        localDirectory: process.env.PERSISTENCE_ORBITDB_IPFS_DIRECTORY ?? '/data/ipfs'
       }
     }
   },

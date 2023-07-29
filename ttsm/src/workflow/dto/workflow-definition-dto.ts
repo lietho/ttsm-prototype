@@ -17,6 +17,7 @@ export interface EventObject {
   external?: boolean;
   schema?: object;
   assign?: ObjectDefinition; // lightweight JSON Schema format, traversed, all values have to be JSON Path expressions and then assigned to context
+  when?: string[];
 }
 
 export interface ExternalParticipant {

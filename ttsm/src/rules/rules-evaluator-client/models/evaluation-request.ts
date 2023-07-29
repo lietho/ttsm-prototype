@@ -29,19 +29,19 @@ export interface EvaluationRequest {
      * @type {{ [key: string]: any; }}
      * @memberof EvaluationRequest
      */
-    newProcessState?: { [key: string]: any; };
+    context?: { [key: string]: any; };
     /**
      * 
      * @type {{ [key: string]: any; }}
      * @memberof EvaluationRequest
      */
-    environmentState?: { [key: string]: any; };
+    environment?: { [key: string]: any; };
     /**
      * 
      * @type {StateTransitionMessage}
      * @memberof EvaluationRequest
      */
-    delta?: StateTransitionMessage;
+    event?: StateTransitionMessage;
     /**
      * 
      * @type {Date}

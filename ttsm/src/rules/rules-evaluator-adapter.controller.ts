@@ -4,9 +4,10 @@ import { RuleServiceResponse } from './models';
 import { WorkflowProposal } from 'src/workflow/models/workflow';
 import { WorkflowInstanceProposal } from 'src/workflow/models/workflow-instance';
 import { WorkflowInstanceTransition } from 'src/workflow/models/workflow-instance-transition';
+import { EventObject } from 'src/workflow/dto';
 import { EvaluationRequest, RulesControllerApi } from './rules-evaluator-client';
-import { ConsistencyStrategy } from 'src/consistency/strategies';
-import { CONSISTENCY_STRATEGY_PROVIDER_TOKEN } from 'src/consistency';
+import { PersistenceService } from 'src/persistence';
+import { getCurrentTransitionDefinition } from 'src/workflow';
 
 @Controller('rulesEvaluator')
 @ApiTags('RulesEvaluator')
@@ -16,7 +17,8 @@ export class RulesEvaluatorAdapterController {
   private readonly logger = new Logger(RulesEvaluatorAdapterController.name);
 
   constructor(
-    private rulesControllerApi: RulesControllerApi
+    private rulesControllerApi: RulesControllerApi,
+    private persistenceService: PersistenceService
     ) {
   }
 
@@ -51,7 +53,7 @@ export class RulesEvaluatorAdapterController {
     this.logger.log("Received new workflow state transition: " + transition);
 
     try {
-      await this.rulesControllerApi.evaluate(this.mapModels(transition));
+      await this.rulesControllerApi.evaluate(await this.mapModels(transition));
 
       return { valid: true, reason: undefined };
     } catch (error) {
@@ -60,17 +62,30 @@ export class RulesEvaluatorAdapterController {
     }
   }
 
-  mapModels(transition: WorkflowInstanceTransition): EvaluationRequest {
+  async mapModels(transition: WorkflowInstanceTransition): Promise<EvaluationRequest> {
     return {
-      rules: [],
-      newProcessState: transition.to,
-      environmentState: {},
-      delta: {
+      rules: await this.getRules(transition),
+      context: transition.to.context,
+      environment: {},
+      event: {
         content: transition.payload,
         sender: transition.organizationId,
         signers: [transition.organizationId]
       },
       currentTime: transition.commitment?.timestamp ?? new Date()
+    }
+  }
+
+  async getRules(transition: WorkflowInstanceTransition): Promise<string[]> {
+    const workflow = await this.persistenceService.getWorkflowById(transition.workflowId);
+    const transitionDefiniton = getCurrentTransitionDefinition(transition.from, transition.event, workflow.workflowModel)
+
+    if (typeof(transitionDefiniton) === "string") {
+      return [];
+    }
+    else {
+      const eventObject: EventObject = transitionDefiniton;
+      return eventObject.when ?? [];
     }
   }
 

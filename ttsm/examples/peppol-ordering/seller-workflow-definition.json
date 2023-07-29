@@ -65,7 +65,7 @@
                 }
             },
             "HANDLE_ORDER_GATEWAY": {
-                "on":{
+                "on": {
                     "YES": "GENERATE_HEADER_LEVEL_ACK",
                     "NO": "GENERATE_HEADER_LEVEL_NACK",
                     "PARTIALLY": "GENERATE_LINE_LEVEL_ACK"
@@ -80,9 +80,22 @@
                             "properties": {
                                 "orderResponseCid": {
                                     "jsonPath": "$.event.orderResponseCid"
+                                },
+                                "pricePerUnit": {
+                                    "jsonPath": "$.event.pricePerUnit"
+                                },
+                                "discountPercentage": {
+                                    "jsonPath": "$.event.discountPercentage"
+                                },
+                                "total": {
+                                    "jsonPath": "$.event.total"
                                 }
                             }
-                        }
+                        },
+                        "when": [
+                            "if context.quantity >= 1000 then event.payload.discountPercentage = 2 else event.payload.discountPercentage = 0",
+                            "event.payload.total = event.payload.pricePerUnit / 100 * (100 - event.payload.discountPercentage) * context.quantity"
+                        ]
                     }
                 }
             },
@@ -150,7 +163,9 @@
                         "payload": {
                             "type": "object",
                             "properties": {
-                                "orderResponseCid": { "jsonPath": "$.context.orderResponseCid" }
+                                "orderResponseCid": {
+                                    "jsonPath": "$.context.orderResponseCid"
+                                }
                             }
                         }
                     }

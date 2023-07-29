@@ -122,6 +122,15 @@
                             "properties": {
                                 "orderResponseIpfsCid": {
                                     "jsonPath": "$.event.orderResponseCid"
+                                },
+                                "pricePerUnit": {
+                                    "jsonPath": "$.event.pricePerUnit"
+                                },
+                                "discountPercentage": {
+                                    "jsonPath": "$.event.discount"
+                                },
+                                "total": {
+                                    "jsonPath": "$.event.total"
                                 }
                             }
                         },
@@ -132,12 +141,28 @@
                             "properties": {
                                 "orderResponseCid": {
                                     "type": "string"
+                                },
+                                "pricePerUnit": {
+                                    "type": "number"
+                                },
+                                "discountPercentage": {
+                                    "type": "number"
+                                },
+                                "total": {
+                                    "type": "number"
                                 }
                             },
                             "required": [
-                                "orderResponseCid"
+                                "orderResponseCid",
+                                "pricePerUnit",
+                                "discountPercentage",
+                                "total"
                             ]
-                        }
+                        },
+                        "when": [
+                            "if context.quantity >= 1000 then event.payload.discountPercentage = 2 else event.payload.discountPercentage = 0",
+                            "event.payload.total = event.payload.pricePerUnit / 100 * (100 - event.payload.discountPercentage) * context.quantity"
+                        ]
                     }
                 }
             },
