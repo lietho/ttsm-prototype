@@ -6,9 +6,9 @@ import java.util.Map;
 public class EvaluationRequest {
 
     private String[] rules;
-    private Map<String, Object> newProcessState;
-    private Map<String, Object> environmentState;
-    private StateTransitionMessage delta;
+    private Map<String, Object> context;
+    private Map<String, Object> environment;
+    private StateTransitionMessage event;
     private ZonedDateTime currentTime;
 
     public EvaluationRequest() {
@@ -30,27 +30,27 @@ public class EvaluationRequest {
         return rules;
     }
 
-    public Map<String, Object> getNewProcessState() {
-        return newProcessState;
+    public Map<String, Object> getContext() {
+        return context;
     }
 
-    public void setNewProcessState(Map<String, Object> state) {
-        this.newProcessState = state;
+    public void setContext(Map<String, Object> state) {
+        this.context = state;
     }
 
-    public Map<String, Object> getEnvironmentState() {
-        return environmentState;
+    public Map<String, Object> getEnvironment() {
+        return environment;
     }
 
-    public void setEnvironmentState(Map<String, Object> environmentState) {
-        this.environmentState = environmentState;
+    public void setEnvironment(Map<String, Object> environmentState) {
+        this.environment = environmentState;
     }
 
-    public StateTransitionMessage getDelta() {
-        return delta;
+    public StateTransitionMessage getEvent() {
+        return event;
     }
 
-    public void setDelta(StateTransitionMessage stateTransitionMessage) {
-        this.delta = stateTransitionMessage;
+    public void setEvent(StateTransitionMessage stateTransitionMessage) {
+        this.event = stateTransitionMessage;
     }
 }

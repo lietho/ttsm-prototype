@@ -6,14 +6,14 @@ import java.util.Map;
 public class StateTransitionMessage {
     private String sender;
     private List<String> signers;
-    private Map<String, Object> content;
+    private Map<String, Object> payload;
 
-    public Map<String, Object> getContent() {
-        return content;
+    public Map<String, Object> getPayload() {
+        return payload;
     }
 
-    public void setContent(Map<String, Object> content) {
-        this.content = content;
+    public void setPayload(Map<String, Object> content) {
+        this.payload = content;
     }
 
     public StateTransitionMessage() {

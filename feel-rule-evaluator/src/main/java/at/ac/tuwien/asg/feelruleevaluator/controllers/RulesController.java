@@ -36,16 +36,16 @@ public class RulesController {
     private Map<String, Object> buildContext(EvaluationRequest request) {
         Map<String, Object> context = new HashMap<>();
 
-        context.put("processState", request.getNewProcessState());
-        context.put("environmentState", request.getEnvironmentState());
+        context.put("context", request.getContext());
+        context.put("environment", request.getEnvironment());
 
-        Map<String, Object> delta = new HashMap<>();
+        Map<String, Object> event = new HashMap<>();
 
-        delta.put("content", request.getDelta().getContent());
-        delta.put("sender", request.getDelta().getSender());
-        delta.put("signers", request.getDelta().getSigners());
+        event.put("payload", request.getEvent().getPayload());
+        event.put("sender", request.getEvent().getSender());
+        event.put("signers", request.getEvent().getSigners());
         
-        context.put("delta", delta);
+        context.put("event", event);
 
         return context;
     }
