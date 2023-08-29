@@ -1,0 +1,82 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "java",
+            "name": "Rule Evaluator - Node 1",
+            "request": "launch",
+            "mainClass": "at.ac.tuwien.asg.feelruleevaluator.FeelRuleEvaluatorApplication",
+            "env": {
+                "SERVER_PORT": 4000
+            }
+        },
+        {
+            "type": "java",
+            "name": "Rule Evaluator - Node 2",
+            "request": "launch",
+            "mainClass": "at.ac.tuwien.asg.feelruleevaluator.FeelRuleEvaluatorApplication",
+            "env": {
+                "SERVER_PORT": 4001
+            }
+        },
+        {
+            "name": "TTSM - Node 1",
+            "cwd": "${workspaceFolder}\\ttsm",
+            "request": "launch",
+            "runtimeArgs": [
+                "run-script",
+                "start:dev"
+            ],
+            "runtimeExecutable": "npm",
+            "skipFiles": [
+                "<node_internals>/**"
+            ],
+            "type": "node",
+            "env": {
+                "CONSISTENCY_EVM_CLIENT_ADDRESS": "0x953737ca9ea364Bf4Ba7d57A369f4dC074ebd568",
+                "CONSISTENCY_EVM_CONTRACT_ADDRESS": "0x83aed74cbd26fcd24a295c81e5762fd45f121780",
+                "CONSISTENCY_EVM_PROVIDER": "wss://goerli.infura.io/ws/v3/a9a86d77cd3d42f2b33b8fe85ecc52cd",
+                "CONSISTENCY_EVM_SIGNER_PRIVATE_KEY": "69ee8d4a7de85a0b1db1f9c1a152db6a1e6877b880c32e8b0c15b5da42f5b5c5",
+                "CONSISTENCY_STRATEGY": "orbitdb",
+                "PERSISTENCE_ORBITDB_ID": "buyer",
+                "PERSISTENCE_ORBITDB_IPFS_DIRECTORY": "data/ipfs1",
+                "PERSISTENCE_ORBITDB_IPFS_PORT": "4102",
+                "PERSISTENCE_ORBITDB_IPFS_PORT_WS": "4103",
+                "RULES_SERVICE_URL": "esdb://127.0.0.1:2113?tls=false",
+                "TTSM_SERVICE_PORT": "3000",
+                "RULES_EVALUATOR_BASE_URL": "http://localhost:4000"
+            }
+        },
+        {
+            "name": "TTSM - Node 2",
+            "cwd": "${workspaceFolder}\\ttsm",
+            "request": "launch",
+            "runtimeArgs": [
+                "run-script",
+                "start:dev"
+            ],
+            "runtimeExecutable": "npm",
+            "skipFiles": [
+                "<node_internals>/**"
+            ],
+            "type": "node",
+            "env": {
+                "CONSISTENCY_EVM_CLIENT_ADDRESS": "0x953737ca9ea364Bf4Ba7d57A369f4dC074ebd568",
+                "CONSISTENCY_EVM_CONTRACT_ADDRESS": "0x83aed74cbd26fcd24a295c81e5762fd45f121780",
+                "CONSISTENCY_EVM_PROVIDER": "wss://goerli.infura.io/ws/v3/a9a86d77cd3d42f2b33b8fe85ecc52cd",
+                "CONSISTENCY_EVM_SIGNER_PRIVATE_KEY": "69ee8d4a7de85a0b1db1f9c1a152db6a1e6877b880c32e8b0c15b5da42f5b5c5",
+                "CONSISTENCY_STRATEGY": "orbitdb",
+                "PERSISTENCE_ORBITDB_ID": "seller",
+                "PERSISTENCE_ORBITDB_IPFS_DIRECTORY": "data/ipfs2",
+                "PERSISTENCE_ORBITDB_IPFS_PORT": "4202",
+                "PERSISTENCE_ORBITDB_IPFS_PORT_WS": "4203",
+                "RULES_SERVICE_URL": "esdb://localhost:2114?tls=false",
+                "TTSM_SERVICE_PORT": "3001",
+                "RULES_EVALUATOR_BASE_URL": "http://localhost:4001"
+            }
+        }
+    ]
+}

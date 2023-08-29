@@ -85,7 +85,10 @@ export class RulesEvaluatorAdapterController {
     }
     else {
       const eventObject: EventObject = transitionDefiniton;
-      return eventObject.when ?? [];
+      const globalConstraints = workflow.workflowModel.globalConstraints ?? [];
+      const stateTransitionContraints = eventObject.when ?? [];
+      
+      return globalConstraints.concat(stateTransitionContraints);
     }
   }
 

@@ -2,6 +2,7 @@ export interface WorkflowDefinitionDto {
   id: string;
   activities: Record<string, ActivityObject>;
   initial: string; // no parallel or compound states possible in prototype
+  globalConstraints?: string[];
 }
 
 export interface ActivityObject {

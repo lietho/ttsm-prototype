@@ -1,7 +1,7 @@
 @buyerUrl=http://localhost:3000
 @sellerUrl=http://localhost:3001
-@buyerOrganizationId=021f92c9145d0638e44e8e9381deba073649a7f5ac2aecfb07fd82935b3794641c
-@sellerOrganizationId=03233dcbf219920c1b47ea59a28f7d138cb045dd1f326b6cc9309603a7c64020ea
+
+
 
 # Create Buyer Workflow
 POST {{buyerUrl}}/workflows
@@ -188,13 +188,14 @@ Content-Type: application/json
 }
 ###
 
-@buyerWorkflowId=9d700e05-9a44-4918-b09b-2f5b9d9bd4f4
+@buyerWorkflowId=963ed07e-a940-4b93-8bee-6ae8ee819480
+@buyerOrganizationId=02a93a0265ab053e347c3c8196b562dbe7800f0f21b57ee4f8cb825baf6c026794
 
 # Launch Buyer Workflow
 POST {{buyerUrl}}/workflows/{{buyerWorkflowId}}/launch
 ###
 
-@buyerWorkflowInstanceId=f0dcf84c-cca8-46d9-bb8d-99f8a5ee3d56
+@buyerWorkflowInstanceId=34b4f8d9-7ef3-4ed7-8716-496bfa738515
 
 # Create Seller Workflow
 
@@ -382,13 +383,14 @@ Content-Type: application/json
 }
 ###
 
-@sellerWorkflowId=dcc82c91-a887-4fc3-b0e4-0782408a0242
+@sellerWorkflowId=e27306dd-87bf-4dd5-bde2-7fa9b4063a56
+@sellerOrganizationId=02a703675a06f82fc883be3f685f4df3466ca5b04f864252fddc3489768773dfd3
 
 # Launch Seller Workflow
 POST {{sellerUrl}}/workflows/{{sellerWorkflowId}}/launch
 ###
 
-@sellerWorklfowInstanceId=24029e13-7147-4874-bdc6-d861fa883d2b
+@sellerWorklfowInstanceId=3de61ce1-f778-43b7-ae57-0d5b82b32884
 
 # LOCAL_ORDER
 POST {{buyerUrl}}/workflows/{{buyerWorkflowId}}/instances/{{buyerWorkflowInstanceId}}/advance
@@ -405,3 +407,6 @@ Content-Type: application/json
     }
 }
 ###
+
+
+GET {{sellerUrl}}/workflows/{{sellerWorkflowId}}/instances/
