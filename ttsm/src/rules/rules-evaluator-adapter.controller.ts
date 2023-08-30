@@ -68,7 +68,7 @@ export class RulesEvaluatorAdapterController {
       context: transition.to.context,
       environment: {},
       event: {
-        content: transition.payload,
+        payload: transition.payload,
         sender: transition.organizationId,
         signers: [transition.organizationId]
       },
@@ -80,7 +80,7 @@ export class RulesEvaluatorAdapterController {
     const workflow = await this.persistenceService.getWorkflowById(transition.workflowId);
     const transitionDefiniton = getCurrentTransitionDefinition(transition.from, transition.event, workflow.workflowModel)
 
-    if (typeof(transitionDefiniton) === "string") {
+    if (transitionDefiniton === undefined || typeof(transitionDefiniton) === "string") {
       return [];
     }
     else {

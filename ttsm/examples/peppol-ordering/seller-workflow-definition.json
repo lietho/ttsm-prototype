@@ -108,6 +108,15 @@
                             "properties": {
                                 "orderResponseCid": {
                                     "jsonPath": "$.event.orderResponseCid"
+                                },
+                                "pricePerUnit": {
+                                    "jsonPath": "$.event.pricePerUnit"
+                                },
+                                "discountPercentage": {
+                                    "jsonPath": "$.event.discountPercentage"
+                                },
+                                "total": {
+                                    "jsonPath": "$.event.total"
                                 }
                             }
                         }
@@ -123,6 +132,15 @@
                             "properties": {
                                 "orderResponseCid": {
                                     "jsonPath": "$.event.orderResponseCid"
+                                },
+                                "pricePerUnit": {
+                                    "jsonPath": "$.event.pricePerUnit"
+                                },
+                                "discountPercentage": {
+                                    "jsonPath": "$.event.discountPercentage"
+                                },
+                                "total": {
+                                    "jsonPath": "$.event.total"
                                 }
                             }
                         }
@@ -165,6 +183,15 @@
                             "properties": {
                                 "orderResponseCid": {
                                     "jsonPath": "$.context.orderResponseCid"
+                                },
+                                "pricePerUnit": {
+                                    "jsonPath": "$.context.pricePerUnit"
+                                },
+                                "discountPercentage": {
+                                    "jsonPath": "$.context.discountPercentage"
+                                },
+                                "total": {
+                                    "jsonPath": "$.context.total"
                                 }
                             }
                         }

@@ -28,6 +28,8 @@ public class FeelRuleEvaluator implements RuleEvaluator {
 
     public void evaluate(String[] rules, Map<String, Object> context, ZonedDateTime currentTime) throws EvaluationFailedException
     {
+        logger.info("Evaluating rules '{}', with context '{}' and current time '{}'.", rules, context, currentTime);
+        
         FeelEngine engine = new FeelEngine.Builder()
             .functionProvider(functionProvider)
             .clock(new FeelEngineClock() {
@@ -50,19 +52,30 @@ public class FeelRuleEvaluator implements RuleEvaluator {
                     Boolean success = (Boolean)value;
 
                     if (!success) {
+                        logger.warn("Rule '{}' evaluated to 'false'.", rules[i]);
                         errors.add(new EvaluationError(i, "Rule evaluated to 'false'"));
+                    }
+                    else {
+                        logger.info("Rule '{}' evaluated to 'true'.", rules[i]);
                     }
                 }
                 else {
+                    logger.warn("Result type of rule '{}' was '{}', but must be Boolean.", rules[i], value.getClass().toString());
                     errors.add(new EvaluationError(i, "Result type of rule was " + value.getClass().toString() + ", but must be Boolean."));
                 }
             } else {
                 final FeelEngine.Failure failure = result.left().get();
+                logger.warn("Evaluation of rule '{}' caused an error: {}", rules[i], failure.message());
                 errors.add(new EvaluationError(i, failure.message()));
             }
         }
 
-        if (errors.size() > 0)
+        if (errors.size() > 0) {
+            logger.warn("Evaluation finished with errors.");
             throw new EvaluationFailedException(errors);
+        }
+        else {
+            logger.warn("Evaluation finished successfull.");
+        }
     }
 }

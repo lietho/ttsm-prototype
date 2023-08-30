@@ -34,5 +34,5 @@ export interface StateTransitionMessage {
      * @type {{ [key: string]: any; }}
      * @memberof StateTransitionMessage
      */
-    content?: { [key: string]: any; };
+    payload?: { [key: string]: any; };
 }
