@@ -1,6 +1,25 @@
 @buyerUrl=http://localhost:3000
 @sellerUrl=http://localhost:3001
 
+# Register Rule Evaluator for Buyer (Only Once)
+POST {{buyerUrl}}/rules/register
+Content-Type: application/json
+
+{
+  "name": "Rule Evaluator",
+  "url": "{{buyerUrl}}/rulesEvaluator"
+}
+###
+
+# Register Rule Evaluator for Seller (Only Once)
+POST {{sellerUrl}}/rules/register
+Content-Type: application/json
+
+{
+  "name": "Rule Evaluator",
+  "url": "{{sellerUrl}}/rulesEvaluator"
+}
+###
 
 
 # Create Buyer Workflow
@@ -188,14 +207,14 @@ Content-Type: application/json
 }
 ###
 
-@buyerWorkflowId=963ed07e-a940-4b93-8bee-6ae8ee819480
-@buyerOrganizationId=02a93a0265ab053e347c3c8196b562dbe7800f0f21b57ee4f8cb825baf6c026794
+@buyerWorkflowId=6ca2e957-ba8e-4c4e-9c79-8ba653c0dc95
+@buyerOrganizationId=0396a1b25a78bed2d4bb99167736cc135bbe932c6844cdf94968b73ddb590e7e63
 
 # Launch Buyer Workflow
 POST {{buyerUrl}}/workflows/{{buyerWorkflowId}}/launch
 ###
 
-@buyerWorkflowInstanceId=34b4f8d9-7ef3-4ed7-8716-496bfa738515
+@buyerWorkflowInstanceId=d3da3102-496c-4c6b-a136-c1b33fe556f7
 
 # Create Seller Workflow
 
@@ -383,16 +402,10 @@ Content-Type: application/json
 }
 ###
 
-@sellerWorkflowId=e27306dd-87bf-4dd5-bde2-7fa9b4063a56
-@sellerOrganizationId=02a703675a06f82fc883be3f685f4df3466ca5b04f864252fddc3489768773dfd3
+@sellerWorkflowId=3df0a68a-5c9d-40aa-aee1-921d09bd6cef
+@sellerOrganizationId=03fc10b9501833edecf9cdeb109eafb28df3acdf2617d07dee41563c0085d3a0bd
 
-# Launch Seller Workflow
-POST {{sellerUrl}}/workflows/{{sellerWorkflowId}}/launch
-###
-
-@sellerWorklfowInstanceId=3de61ce1-f778-43b7-ae57-0d5b82b32884
-
-# LOCAL_ORDER
+# Buyer creates order
 POST {{buyerUrl}}/workflows/{{buyerWorkflowId}}/instances/{{buyerWorkflowInstanceId}}/advance
 Content-Type: application/json
 
@@ -408,5 +421,35 @@ Content-Type: application/json
 }
 ###
 
+@sellerWorklfowInstanceId=60079409-f10a-4a27-9e95-c6957154aa77
 
-GET {{sellerUrl}}/workflows/{{sellerWorkflowId}}/instances/
+# Seller accepts order
+POST {{sellerUrl}}/workflows/{{sellerWorkflowId}}/instances/{{sellerWorklfowInstanceId}}/advance
+Content-Type: application/json
+
+{
+    "event": "YES"
+}
+###
+
+# Seller sends invoice
+POST {{sellerUrl}}/workflows/{{sellerWorkflowId}}/instances/{{sellerWorklfowInstanceId}}/advance
+Content-Type: application/json
+
+{
+    "event": "SUBMIT_WORKER_ORDER_RESPONSE",
+    "payload": {
+        "orderResponseCid": "IPFS-CID-PLACEHOLDER",
+        "pricePerUnit": 10,
+        "discountPercentage": 0,
+        "total": 50
+    }
+}
+###
+
+
+GET {{sellerUrl}}/workflows/{{sellerWorkflowId}}/instances/{{sellerWorklfowInstanceId}}
+###
+
+GET {{buyerUrl}}/workflows/{{buyerWorkflowId}}/instances/{{buyerWorkflowInstanceId}}
+###

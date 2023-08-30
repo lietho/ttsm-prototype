@@ -1,0 +1,390 @@
+{
+	"info": {
+		"_postman_id": "a3ff71d7-11fd-4080-a2a0-3c22daddacfe",
+		"name": "TTSM Prototype",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Workflows",
+			"item": [
+				{
+					"name": "Create workflow",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const responseData = JSON.parse(responseBody);\r",
+									"postman.setEnvironmentVariable(\"workflowId\", responseData.id);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"config\": {\r\n        \"optimizer\": [\r\n            \"noop\"\r\n        ],\r\n        \"type\": \"STATE_CHARTS\"\r\n    },\r\n    \"workflow\": {\r\n        \"id\": \"Ordering (Buyer)\",\r\n        \"initial\": \"PREPARE_ORDER\",\r\n        \"activities\": {\r\n            \"PREPARE_ORDER\": {\r\n                \"on\": {\r\n                    \"LOCAL_ORDER\": {\r\n                        \"target\": \"SUBMIT_ORDER\",\r\n                        \"assign\": {\r\n                            \"type\": \"object\",\r\n                            \"properties\": {\r\n                                \"organizationId\": {\r\n                                    \"jsonPath\": \"$.event.organizationId\"\r\n                                },\r\n                                \"workflowId\": {\r\n                                    \"jsonPath\": \"$.event.workflowId\"\r\n                                },\r\n                                \"quantity\": {\r\n                                    \"jsonPath\": \"$.event.quantity\"\r\n                                },\r\n                                \"articleNumber\": {\r\n                                    \"jsonPath\": \"$.event.articleNumber\"\r\n                                },\r\n                                \"articleName\": {\r\n                                    \"jsonPath\": \"$.event.articleName\"\r\n                                }\r\n                            }\r\n                        },\r\n                        \"schema\": {\r\n                            \"title\": \"Order\",\r\n                            \"description\": \"Models external request for ordering products\",\r\n                            \"type\": \"object\",\r\n                            \"properties\": {\r\n                                \"organizationId\": {\r\n                                    \"type\": \"string\"\r\n                                },\r\n                                \"workflowId\": {\r\n                                    \"type\": \"string\"\r\n                                },\r\n                                \"quantity\": {\r\n                                    \"type\": \"number\",\r\n                                    \"exclusiveMinimum\": 0\r\n                                },\r\n                                \"articleNumber\": {\r\n                                    \"description\": \"String representation of an article number\",\r\n                                    \"type\": \"string\"\r\n                                },\r\n                                \"articleName\": {\r\n                                    \"type\": \"string\",\r\n                                    \"maxLength\": 60,\r\n                                    \"minLength\": 2\r\n                                }\r\n                            },\r\n                            \"required\": [\r\n                                \"organizationId\",\r\n                                \"workflowId\",\r\n                                \"quantity\",\r\n                                \"articleNumber\"\r\n                            ]\r\n                        }\r\n                    }\r\n                }\r\n            },\r\n            \"SUBMIT_ORDER\": {\r\n                \"on\": {\r\n                    \"\": \"RECEIVE_ORDER_RESPONSE\"\r\n                },\r\n                \"external\": true,\r\n                \"externalParticipants\": [\r\n                    {\r\n                        \"id\": \"seller_organization\",\r\n                        \"connectorType\": \"orbitdb\",\r\n                        \"recipientInfo\": {\r\n                            \"ORGANIZATION_ID\": \"$.context.organizationId\",\r\n                            \"WORKFLOW_ID\": \"$.context.workflowId\"\r\n                        },\r\n                        \"event\": \"ORDER\",\r\n                        \"assignOnAcceptance\": {\r\n                            \"type\": \"object\",\r\n                            \"properties\": {\r\n                                \"sellerHasAccepted\": {\r\n                                    \"value\": true\r\n                                },\r\n                                \"sellerWorkflowInstanceId\": {\r\n                                    \"jsonPath\": \"$.origin.workflowInstanceId\"\r\n                                }\r\n                            }\r\n                        },\r\n                        \"assignOnRejection\": {\r\n                            \"type\": \"object\",\r\n                            \"properties\": {\r\n                                \"sellerHasAccepted\": {\r\n                                    \"value\": false\r\n                                }\r\n                            }\r\n                        },\r\n                        \"payload\": {\r\n                            \"type\": \"object\",\r\n                            \"properties\": {\r\n                                \"quantity\": { \"jsonPath\": \"$.context.quantity\" },\r\n                                \"articleNumber\": { \"jsonPath\": \"$.context.articleNumber\" },\r\n                                \"articleName\": { \"jsonPath\": \"$.context.articleName\" }\r\n                            }\r\n                        }\r\n                    }\r\n                ]\r\n            },\r\n            \"RECEIVE_ORDER_RESPONSE\": {\r\n                \"on\": {\r\n                    \"ORDER_RESPONSE\": {\r\n                        \"target\": \"UPDATE_ORDER_STATUS\",\r\n                        \"external\": true,\r\n                        \"assign\": {\r\n                            \"type\": \"object\",\r\n                            \"properties\": {\r\n                                \"orderResponseIpfsCid\": {\r\n                                    \"jsonPath\": \"$.event.orderResponseCid\"\r\n                                }\r\n                            }\r\n                        },\r\n                        \"schema\": {\r\n                            \"title\": \"Submit Order Acknowledgment Response\",\r\n                            \"description\": \"Models ACK response to submit order event\",\r\n                            \"type\": \"object\",\r\n                            \"properties\": {\r\n                                \"orderResponseCid\": {\r\n                                    \"type\": \"string\"\r\n                                }\r\n                            },\r\n                            \"required\": [\r\n                                \"orderResponseCid\"\r\n                            ]\r\n                        }\r\n                    }\r\n                }\r\n            },\r\n            \"UPDATE_ORDER_STATUS\": {\r\n                \"on\": {\r\n                    \"STATUS_UPDATED\": \"ORDER_STATUS_UPDATED\"\r\n                }\r\n            },\r\n            \"ORDER_STATUS_UPDATED\": {\r\n                \"final\": true\r\n            }\r\n        }\r\n    }\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{host}}/workflows",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"workflows"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get all workflows",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{host}}/workflows",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"workflows"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get workflow",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{host}}/workflows/{{workflowId}}",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"workflows",
+								"{{workflowId}}"
+							],
+							"query": [
+								{
+									"key": "until",
+									"value": "2022-08-08T14:00:00",
+									"disabled": true
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Workflow Instances",
+			"item": [
+				{
+					"name": "Launch workflow instance",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const responseData = JSON.parse(responseBody);\r",
+									"postman.setEnvironmentVariable(\"instanceId\", responseData.id);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{host}}/workflows/{{workflowId}}/launch",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"workflows",
+								"{{workflowId}}",
+								"launch"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Advance workflow instance",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"event\": \"LOCAL_ORDER\",\r\n    \"payload\": { \r\n        \"organizationId\": \"0208133d2d7d8b1f12cef59ccd49f1e8ebb678d75ea73197844fa486ec987e2808\",\r\n        \"workflowId\": \"958893d8-9fa9-4a05-8984-67fb123a8412\",\r\n        \"quantity\": 5,\r\n        \"articleNumber\": \"24574567\",\r\n        \"articleName\": \"Pen\"\r\n    }\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{host}}/workflows/{{workflowId}}/instances/{{instanceId}}/advance",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"workflows",
+								"{{workflowId}}",
+								"instances",
+								"{{instanceId}}",
+								"advance"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get workflow instance",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{host}}/workflows/{{workflowId}}/instances/{{instanceId}}",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"workflows",
+								"{{workflowId}}",
+								"instances",
+								"{{instanceId}}"
+							],
+							"query": [
+								{
+									"key": "until",
+									"value": "2022-08-08T14:20:00",
+									"disabled": true
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get workflow instances",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{host}}/workflows/{{workflowId}}/instances",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"workflows",
+								"{{workflowId}}",
+								"instances"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get workflow instance payloads",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{host}}/workflows/{{workflowId}}/instances/{{instanceId}}/payloads",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"workflows",
+								"{{workflowId}}",
+								"instances",
+								"{{instanceId}}",
+								"payloads"
+							],
+							"query": [
+								{
+									"key": "until",
+									"value": "2022-08-04T14:43:05",
+									"disabled": true
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Utils",
+			"item": [
+				{
+					"name": "Ping",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{host}}/ping",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"ping"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Health",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{host}}/health",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"health"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Rules",
+			"item": [
+				{
+					"name": "Register rule service",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const responseData = JSON.parse(responseBody);\r",
+									"postman.setEnvironmentVariable(\"ruleServiceId\", responseData.id);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"name\": \"My rule engine\",\r\n    \"url\": \"http://localhost/\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{host}}/rules/register",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"rules",
+								"register"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Unregister rule service",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{host}}/rules/unregister/{{ruleServiceId}}",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"rules",
+								"unregister",
+								"{{ruleServiceId}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get all rule services",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{host}}/rules",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"rules"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "host",
+			"value": "",
+			"type": "default"
+		},
+		{
+			"key": "workflowId",
+			"value": "",
+			"type": "default"
+		},
+		{
+			"key": "instanceId",
+			"value": "",
+			"type": "default"
+		}
+	]
+}

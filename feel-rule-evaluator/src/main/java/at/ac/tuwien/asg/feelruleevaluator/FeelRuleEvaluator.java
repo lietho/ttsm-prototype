@@ -8,6 +8,8 @@ import javax.inject.Inject;
 
 import org.camunda.feel.FeelEngine;
 import org.camunda.feel.FeelEngineClock;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import at.ac.tuwien.asg.feelruleevaluator.models.EvaluationError;
@@ -18,6 +20,8 @@ public class FeelRuleEvaluator implements RuleEvaluator {
 
     @Inject
     private FunctionProvider functionProvider;
+
+    private Logger logger = LoggerFactory.getLogger(FeelRuleEvaluator.class);
     
     public FeelRuleEvaluator() {
     }
