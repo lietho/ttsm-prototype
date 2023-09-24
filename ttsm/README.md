@@ -1,6 +1,4 @@
 ## Time-travelling State Machine Prototype for verifiable inter-organizational Business Processes
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.7779531.svg)](https://doi.org/10.5281/zenodo.7779531)
-
 A prototypical implementation of a time-travelling state machine for inter-organizational business process and workflow management. This prototype shows the viability of time-travel verification of business process and
 workflow activities that are backed by the immutability and traceability of a blockchain.
 Collaboration with other business partner works with a peer-to-peer approach using [OrbitDB](https://github.com/orbitdb/orbit-db). The Rule Evaluator can be used to ensure compliance of the process with predefined terms and regulations.
